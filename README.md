@@ -2,11 +2,10 @@
 
 A lock-free cuckoo filter implementation.
 
-
 ### Requirements
 
 * CMake >= 3.4.1
-* OpenSSL (install via `sudo apt install libssl-dev`)
+* OpenSSL (install via `sudo apt install libssl-dev`, for generating MD5 fingerprint)
 
 ### Usage
 * install `build-essential`, `cmake` and `libssl-dev`.
