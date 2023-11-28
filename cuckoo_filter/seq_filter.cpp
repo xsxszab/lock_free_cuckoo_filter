@@ -72,6 +72,7 @@ bool SequentialFilter::insert(const std::string& key) {
         for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
             if (hash_table[replace_hash][i].empty()) {
                 hash_table[replace_hash][i] = fingerprint;
+                std::cout << "found replacement location" << std::endl;
                 mtx.unlock();
                 return true;
             }
