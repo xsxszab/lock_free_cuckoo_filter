@@ -7,6 +7,7 @@
 #define NUM_THREADS 8
 #define NUM_STRINGS_PER_THREAD 512
 #define STRING_LENGTH 40
+#define NUM_STRINGS (NUM_STRINGS_PER_THREAD * NUM_THREADS)
 #define HASH_TABLE_SIZE 2048
 
 int main() {
@@ -28,7 +29,7 @@ int main() {
     SequentialFilter filter(HASH_TABLE_SIZE, true);
     std::vector<std::string> strings;
 
-    for (int i = 0; i < NUM_THREADS * NUM_STRINGS_PER_THREAD; i++) {
+    for (int i = 0; i < NUM_STRINGS; i++) {
         strings.push_back(gen_random_string(STRING_LENGTH));
     }
 
@@ -52,6 +53,12 @@ int main() {
 
     for (int i = 0; i < NUM_THREADS; i++) {
         threads[i].join();
+    }
+
+    for (int i = 0; i < NUM_STRINGS; i++) {
+        if (!filter.find(strings[i])) {
+            std::cout << "error, cannot find string" << strings[i] << std::endl;
+        }
     }
 
     return 0;
