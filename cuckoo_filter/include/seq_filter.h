@@ -9,6 +9,8 @@
 // fail.
 #define NUM_MAX_KICKS 10
 
+#include <marcos.h>
+
 #include <array>
 #include <cstdint>
 #include <mutex>
@@ -19,6 +21,8 @@ class SequentialFilter {
    public:
     SequentialFilter(int capacity);
     SequentialFilter(int capacity, bool _verbose);
+
+    DISABLE_COPY_AND_MOVE_CONSTRUCT(SequentialFilter)
 
     ~SequentialFilter();
 

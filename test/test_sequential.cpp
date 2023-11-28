@@ -29,10 +29,12 @@ int main() {
     SequentialFilter filter(HASH_TABLE_SIZE, true);
     std::vector<std::string> strings;
 
+    // generate a list of random strings
     for (int i = 0; i < NUM_STRINGS; i++) {
         strings.push_back(gen_random_string(STRING_LENGTH));
     }
 
+    // thread function
     auto thread_func_insert = [&](int tid) {
         int str_start_idx = tid * NUM_STRINGS_PER_THREAD;
         int str_end_idx = (tid + 1) * (NUM_STRINGS_PER_THREAD);
@@ -46,6 +48,8 @@ int main() {
         std::cout << "thread " << tid << " terminated" << std::endl;
     };
 
+    // launch a group of threads that concurrently insert strings into the
+    // filter
     std::thread threads[NUM_THREADS];
     for (int i = 0; i < NUM_THREADS; i++) {
         threads[i] = std::thread(thread_func_insert, i);
@@ -55,6 +59,7 @@ int main() {
         threads[i].join();
     }
 
+    // check if all strings inserted can be found
     for (int i = 0; i < NUM_STRINGS; i++) {
         if (!filter.find(strings[i])) {
             std::cout << "error, cannot find string" << strings[i] << std::endl;
