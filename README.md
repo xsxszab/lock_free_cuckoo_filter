@@ -13,3 +13,6 @@ A lock-free cuckoo filter implementation.
 * run `cmake ..`.
 * run `make` to build both the filter shared library and test cases. New test cases can be added by creating .cpp file(s) under ./test, the CMake script will automatically detect and build new test cases.
 * executable test cases are under ./build/bin/
+
+### References
+[Cuckoo Filter: Practically Better Than Bloom](https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf)
