@@ -40,3 +40,5 @@ uint32_t hash(uint32_t x) {
     x = (x >> 16) ^ x;
     return x;
 }
+
+uint32_t hash(const std::string& key) { return jenkins_hash(key); }

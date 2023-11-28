@@ -17,4 +17,7 @@ uint32_t jenkins_hash(const std::string& key);
 // not used
 uint32_t hash(uint32_t x);
 
+// not used
+uint32_t hash(const std::string& key);
+
 #endif
