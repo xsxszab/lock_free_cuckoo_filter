@@ -3,7 +3,7 @@
 A lock-free cuckoo filter implementation.
 
 ### Requirements
-
+* C++ 14
 * CMake >= 3.4.1
 * OpenSSL (install via `sudo apt install libssl-dev`, for generating MD5 fingerprint)
 

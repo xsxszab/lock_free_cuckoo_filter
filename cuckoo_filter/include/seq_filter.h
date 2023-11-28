@@ -11,6 +11,7 @@
 
 #include <array>
 #include <cstdint>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -26,7 +27,7 @@ class SequentialFilter {
     bool insert(const std::string& key);
     // find is a given key is present in the hash table. Return true if present,
     // false if not.
-    bool find(const std::string& key) const;
+    bool find(const std::string& key);
 
     // remove a key from the hash table. Return true if the key is deleted,
     // false if the key is not present in the table. Note that when using this
@@ -43,9 +44,11 @@ class SequentialFilter {
     // how many entries are in the hash table, note that one entry contains
     // NUM_ITEMS_PER_ENTRY item slots.
     int table_size;
+    // true if print out debug information, false if not
     bool verbose;
-
     std::vector<std::array<std::string, NUM_ITEMS_PER_ENTRY>> hash_table;
+
+    std::mutex mtx;
 };
 
 #endif

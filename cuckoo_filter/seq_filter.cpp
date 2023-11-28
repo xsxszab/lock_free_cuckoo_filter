@@ -25,6 +25,7 @@ SequentialFilter::~SequentialFilter() {
 }
 
 bool SequentialFilter::insert(const std::string& key) {
+    mtx.lock();
     if (verbose) {
         std::cout << "try to insert key " << key << " into filter" << std::endl;
     }
@@ -39,6 +40,7 @@ bool SequentialFilter::insert(const std::string& key) {
                 std::cout << "find empty slot at entry " << hash1 << ", index "
                           << i << std::endl;
             }
+            mtx.unlock();
             return true;
         }
     }
@@ -50,6 +52,7 @@ bool SequentialFilter::insert(const std::string& key) {
                 std::cout << "find empty slot at entry " << hash2 << ", index "
                           << i << std::endl;
             }
+            mtx.unlock();
             return true;
         }
     }
@@ -69,6 +72,7 @@ bool SequentialFilter::insert(const std::string& key) {
         for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
             if (hash_table[replace_hash][i].empty()) {
                 hash_table[replace_hash][i] = fingerprint;
+                mtx.unlock();
                 return true;
             }
         }
@@ -76,10 +80,12 @@ bool SequentialFilter::insert(const std::string& key) {
     if (verbose) {
         std::cout << "hash table capacity too low" << std::endl;
     }
+    mtx.unlock();
     return false;
 }
 
-bool SequentialFilter::find(const std::string& key) const {
+bool SequentialFilter::find(const std::string& key) {
+    mtx.lock();
     if (verbose) {
         std::cout << "try to find key " << key << std::endl;
     }
@@ -93,6 +99,7 @@ bool SequentialFilter::find(const std::string& key) const {
                 std::cout << "found key " << key << "at entry " << hash1
                           << ", index " << i << std::endl;
             }
+            mtx.unlock();
             return true;
         }
     }
@@ -103,16 +110,19 @@ bool SequentialFilter::find(const std::string& key) const {
                 std::cout << "found key " << key << "at entry " << hash2
                           << ", index " << i << std::endl;
             }
+            mtx.unlock();
             return true;
         }
     }
     if (verbose) {
         std::cout << "cannot find key " << key << std::endl;
     }
+    mtx.unlock();
     return false;
 }
 
 bool SequentialFilter::remove(const std::string& key) {
+    mtx.lock();
     if (verbose) {
         std::cout << "try to remove key " << key << std::endl;
     }
@@ -127,6 +137,7 @@ bool SequentialFilter::remove(const std::string& key) {
                 std::cout << "removed key " << key << "at entry " << hash1
                           << ", index " << i << std::endl;
             }
+            mtx.unlock();
             return true;
         }
     }
@@ -138,6 +149,7 @@ bool SequentialFilter::remove(const std::string& key) {
                 std::cout << "removed key " << key << "at entry " << hash2
                           << ", index " << i << std::endl;
             }
+            mtx.unlock();
             return true;
         }
     }
@@ -145,6 +157,7 @@ bool SequentialFilter::remove(const std::string& key) {
     std::cout << "warning, trying to delete non-exsitent key, the filter's "
                  "behavior is undefined"
               << std::endl;
+    mtx.unlock();
     return false;
 }
 
