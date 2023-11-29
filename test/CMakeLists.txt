@@ -4,6 +4,7 @@ message(STATUS "configure cmake in directory ./test")
 
 find_package(OpenSSL REQUIRED)
 
+# find and build all .cpp files
 foreach(SOURCE ${TEST_SOURCES})
     get_filename_component( SOURCE_FILENAME ${SOURCE} NAME)
     string(REPLACE ".cpp" "" OUTPUT_NAME  ${SOURCE_FILENAME})

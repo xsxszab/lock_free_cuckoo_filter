@@ -1,3 +1,5 @@
+# run all tests and write outputs to <project_root_dir>/logs/
+
 echo "Test Started"
 search_dir=../build/bin
 

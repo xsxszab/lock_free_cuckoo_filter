@@ -19,9 +19,12 @@
 
 class SequentialFilter {
    public:
+    // capacity: number of entries the table should have
     SequentialFilter(int capacity);
+    // if verbose is set to true, the filter will print out debug information
     SequentialFilter(int capacity, bool _verbose);
 
+    // self-explanatory
     DISABLE_COPY_AND_MOVE_CONSTRUCT(SequentialFilter)
 
     ~SequentialFilter();
@@ -52,6 +55,7 @@ class SequentialFilter {
     bool verbose;
     std::vector<std::array<std::string, NUM_ITEMS_PER_ENTRY>> hash_table;
 
+    // mutex for concurrent table access
     std::mutex mtx;
 };
 

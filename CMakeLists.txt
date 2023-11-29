@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.4.1)
 
 project(cuckoo_filter
-        VERSION 0.1
+        VERSION 0.2
         DESCRIPTION "lock-free cuckoo filter"
         LANGUAGES C CXX)
 
@@ -31,5 +31,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 include_directories(${CMAKE_SOURCE_DIR}/cuckoo_filter/include)
 
+# build cuckoo filter shared library
 add_subdirectory(./cuckoo_filter)
+
+# build test cases
 add_subdirectory(./test)

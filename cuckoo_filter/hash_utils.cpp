@@ -1,6 +1,6 @@
 #include <hash_utils.h>
 
-// a modified version of OpenSSL example code
+// a modified version of OpenSSL example code. BTW OpenSSL API is terrible.
 // https://www.openssl.org/docs/manmaster/man3/EVP_Digest.html
 std::string md5_fingerprint(const std::string& key) {
     EVP_MD_CTX* mdctx;
@@ -41,4 +41,5 @@ uint32_t hash(uint32_t x) {
     return x;
 }
 
+// not used
 uint32_t hash(const std::string& key) { return jenkins_hash(key); }
