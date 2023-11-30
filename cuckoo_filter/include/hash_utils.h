@@ -6,6 +6,9 @@
 #include <cstdint>
 #include <string>
 
+// this header file contains implementaions of fingerprint and hashing
+// algorithms used in the cuckoo filter.
+
 // a modified version of OpenSSL example code
 // https://www.openssl.org/docs/manmaster/man3/EVP_Digest.html
 std::string md5_fingerprint(const std::string& key);

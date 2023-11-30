@@ -3,6 +3,9 @@
 
 #include <cstdint>
 
+// this header file defines the pointer type used in the lock-free cuckoo filter
+// and its related operations.
+
 // a table pointer is a real 64bit pointer populated with additional counter and
 // mark information. The table pointer's highest 16bits are used by the counter,
 // the remaining 48bits are used by the real pointer (currently x64 platforms

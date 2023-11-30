@@ -1,10 +1,10 @@
-#ifndef COMMON_H
-#define COMMON_H
 
-#include <string>
+// this header file defines some variables used by cuckoo filters.
 
-// generate a random string of length <len>, possible characters are 0-9, a-z
-// and A-Z.
-std::string gen_random_string(const int len);
+// maximum number of items can be stored in one hash table entry
+#define NUM_ITEMS_PER_ENTRY 4
 
-#endif
+// maximum number of replacement can happen for inserting one key, if this
+// number is exceeded, the hash table is considered full and the insertion will
+// fail.
+#define NUM_MAX_KICKS 10
