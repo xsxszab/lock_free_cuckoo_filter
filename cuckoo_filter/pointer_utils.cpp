@@ -9,7 +9,7 @@ uint16_t get_counter(const table_pointer pointer) {
 
 void update_counter(table_pointer& pointer, const uint64_t counter_val) {
     if (counter_val > UINT16_MAX) {
-        std::cout << "[ERROR] counter value too large" << std::endl;
+        std::cerr << "[ERROR] counter value too large" << std::endl;
         abort();
     }
     pointer &= ~counter_mask;
@@ -19,7 +19,7 @@ void update_counter(table_pointer& pointer, const uint64_t counter_val) {
 table_pointer get_new_counter(const table_pointer pointer,
                               const uint64_t counter_val) {
     if (counter_val > UINT16_MAX) {
-        std::cout << "[ERROR] counter value too large" << std::endl;
+        std::cerr << "[ERROR] counter value too large" << std::endl;
         abort();
     }
     table_pointer ret = pointer;
@@ -62,7 +62,7 @@ table_pointer get_new_mark(const table_pointer pointer, const bool marked) {
 table_pointer create_pointer(const uint64_t counter,
                              const uint64_t real_pointer, bool marked) {
     if (counter > UINT16_MAX) {
-        std::cout << "[ERROR] counter value too large" << std::endl;
+        std::cerr << "[ERROR] counter value too large" << std::endl;
         abort();
     }
     table_pointer ret = 0x0;

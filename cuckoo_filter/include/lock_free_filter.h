@@ -61,15 +61,10 @@ class LockFreeCuckooFilter {
      * @param[in]  key The key to search.
      * @param[in] tid the caller's thread id
      *
-     * @return true if found, false if not found.
+     * @return 0 if not found, 1 if key is in the primary entry, 2 if key is in
+     * the secondary entry
      */
-    bool find(const std::string& key, int tid);
-
-    // remove a key from the hash table. Return true if the key is deleted,
-    // false if the key is not present in the table. Note that when using this
-    // filter, it is the user's responsibility to ensure that any key must be in
-    // the table before deletion, i.e., this function must always return true,
-    // otherwise the filter's behavior is undefined. tid: caller's thread id
+    int find(const std::string& key, int tid);
 
     /**
      * @brief Remove a key from the hash table.
@@ -112,6 +107,14 @@ class LockFreeCuckooFilter {
      * @brief Verbose flag.
      */
     bool verbose;
+
+    /**
+     * @brief check counter value.
+     * For detailed explanation please refer to
+     * https://ieeexplore.ieee.org/document/6888938, page 4
+     * @return true if a false miss might happened, false if not
+     */
+    bool check_counter(int ts1, int ts2, int ts1x, int ts2x);
 };
 
 #endif
