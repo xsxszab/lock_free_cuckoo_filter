@@ -1,8 +1,11 @@
 #ifndef _SYRAH_CYCLE_TIMER_H_
 #define _SYRAH_CYCLE_TIMER_H_
 
-// this header file comes from 15418 course web page
-// https://www.cs.cmu.edu/~418/code/rec03/mvmul/CycleTimer.h
+/**
+ * @file cycle_timer.h
+ * @brief this header file comes from 15418 course web page
+ * (https://www.cs.cmu.edu/~418/code/rec03/mvmul/CycleTimer.h).
+ */
 
 #if defined(__APPLE__)
 #if defined(__x86_64__)

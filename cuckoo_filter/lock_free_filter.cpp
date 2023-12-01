@@ -27,4 +27,4 @@ bool LockFreeCuckooFilter::remove(const std::string& key, int tid) {
     return false;
 }
 
-int LockFreeCuckooFilter::size(int tid) const { return table_size; }
+int LockFreeCuckooFilter::size() const { return table_size; }

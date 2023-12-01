@@ -1,6 +1,12 @@
 #ifndef SEQ_FILTER_H
 #define SEQ_FILTER_H
 
+/**
+ * @file seq_filter.h
+ * @brief this header file contains implementaions of a coarse grained locked
+ * filter.
+ */
+
 #include <common.h>
 #include <marcos.h>
 
@@ -36,7 +42,7 @@ class SequentialFilter {
     // otherwise the filter's behavior is undefined.
     bool remove(const std::string& key);
 
-    // return the hash table's size (number of entries, not the table_size *
+    // return the hash table's size (number of entries, not table_size *
     // NUM_ITEMS_PER_ENTRY)
     int size() const;
 

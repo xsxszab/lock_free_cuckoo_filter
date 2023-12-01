@@ -1,26 +1,46 @@
 #ifndef HASH_UTILS_H
 #define HASH_UTILS_H
 
+/**
+ * @file hash_utils.h
+ * @brief this header file contains implementaions of fingerprint and hashing
+ * algorithms used by the cuckoo filter.
+ */
+
+// for md5 fingerprinting
 #include <openssl/evp.h>
 
 #include <cstdint>
 #include <string>
 
-// this header file contains implementaions of fingerprint and hashing
-// algorithms used in the cuckoo filter.
-
-// a modified version of OpenSSL example code
-// https://www.openssl.org/docs/manmaster/man3/EVP_Digest.html
+/**
+ * @brief calculate a string's fingerprint. This function is a modified version
+ * of OpenSSL's example code
+ * (https://www.openssl.org/docs/manmaster/man3/EVP_Digest.html).
+ *
+ * @param[in] key the input string
+ * @return the key's fingerprint.
+ */
 std::string md5_fingerprint(const std::string& key);
 
 // hash function, string -> unsigned int32. Note that in order to use this
 // function in a hash table, the hash table index should be 'hash % table_size'
+
+/**
+ * @brief jenkins hash function
+ * @param[in] key the input key
+ * @return the hash value
+ */
 uint32_t jenkins_hash(const std::string& key);
 
-// not used
+/**
+ * @brief not used
+ */
 uint32_t hash(uint32_t x);
 
-// not used
+/**
+ * @brief not used
+ */
 uint32_t hash(const std::string& key);
 
 #endif
