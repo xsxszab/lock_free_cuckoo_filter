@@ -7,6 +7,7 @@
  */
 
 #include <common.h>
+#include <hash_utils.h>
 #include <marcos.h>
 #include <pointer_utils.h>
 
@@ -54,17 +55,27 @@ class LockFreeCuckooFilter {
      * @return true if successfully inserted the key, false if failed (hash
      * table full).
      */
-    bool insert(const std::string& key, int tid);
+    bool insert(const std::string& key, const int tid);
 
     /**
      * @brief Find if a given key is present in the filter.
      * @param[in]  key The key to search.
      * @param[in] tid the caller's thread id
      *
-     * @return 0 if not found, 1 if key is in the primary entry, 2 if key is in
-     * the secondary entry
+     * @return (TODO: return slot index, need better explanation)
      */
-    int find(const std::string& key, int tid);
+    int find(const std::string& key, const int tid);
+
+    /**
+     * @brief Find if a given key is present in the filter. If it is present,
+     * return the corresponding table_pointer.
+     * @param[in]  key The key to search.
+     * @param[in, out] pointer if the key is found, this table_pointer points to
+     * the corresponding table item.
+     * @param[in] tid the caller's thread id
+     * @return (TODO: return slot index, need better explanation)
+     */
+    int find(const std::string& key, table_pointer& pointer, const int tid);
 
     /**
      * @brief Remove a key from the hash table.
@@ -76,7 +87,7 @@ class LockFreeCuckooFilter {
      * before deletion, i.e., this function must always return true, otherwise
      * the filter's behavior is undefined.
      */
-    bool remove(const std::string& key, int tid);
+    bool remove(const std::string& key, const int tid);
 
     // return the hash table's size (number of entries, not the table_size *
     // NUM_ITEMS_PER_ENTRY). tid: caller's thread id.
@@ -114,7 +125,13 @@ class LockFreeCuckooFilter {
      * https://ieeexplore.ieee.org/document/6888938, page 4
      * @return true if a false miss might happened, false if not
      */
-    bool check_counter(int ts1, int ts2, int ts1x, int ts2x);
+    bool check_counter(const int ts1, const int ts2, const int ts1x,
+                       const int ts2x);
+
+    void retire_key(table_pointer pointer, const int tid);
+
+    void help_relocate();
+    bool relocate();
 };
 
 #endif
