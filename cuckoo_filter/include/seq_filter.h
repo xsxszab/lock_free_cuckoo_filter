@@ -19,13 +19,28 @@
 class SequentialFilter {
    public:
     // capacity: number of entries the table should have
+
+    /**
+     * @brief construct a coarse grained locked cuckoo filter instance
+     * @param[in] capacity size of the hash table
+     * concurrently.
+     */
     SequentialFilter(int capacity);
-    // if verbose is set to true, the filter will print out debug information
+
+    /**
+     * @brief construct a coarse grained locked cuckoo filter instance
+     * @param[in] capacity size of the hash table
+     * concurrently.
+     * @param[in] _verbose Whether or not to print out debug information.
+     */
     SequentialFilter(int capacity, bool _verbose);
 
     // self-explanatory
     DISABLE_COPY_AND_MOVE_CONSTRUCT(SequentialFilter)
 
+    /**
+     * @brief destory the fileter instance
+     */
     ~SequentialFilter();
 
     // insert a key into the hash table. Return true if successfully inserted
@@ -44,6 +59,11 @@ class SequentialFilter {
 
     // return the hash table's size (number of entries, not table_size *
     // NUM_ITEMS_PER_ENTRY)
+
+    /**
+     * @brief get the hash table's size
+     * @return the hash table's size
+     */
     int size() const;
 
    private:
