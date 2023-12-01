@@ -100,7 +100,9 @@ class LockFreeCuckooFilter {
 
    private:
     /**
-     * @brief The hash table's size (number of entries).
+     * @brief The hash table's size (number of entries). Since cuckoo filter
+     * only store item's fingerprint, it is impossible to enlarge the table
+     * through rehashing, therefore this value will remain constant.
      */
     int table_size;
 

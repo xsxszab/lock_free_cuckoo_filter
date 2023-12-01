@@ -22,17 +22,17 @@
 using table_pointer = uint64_t;
 
 /**
- * @brief 63rd...48th bits
+ * @brief 63rd...48th bits in a 64bit integer
  */
 static const uint64_t counter_mask = 0xFFFF000000000000;
 
 /**
- * @brief 47th...1st bits
+ * @brief 47th...1st bits in a 64bit integer
  */
 static const uint64_t real_pointer_mask = 0xFFFFFFFFFFFE;
 
 /**
- * @brief 0th bit
+ * @brief 0th bit in a 64bit integer
  */
 static const uint64_t mark_mask = 0x1;
 

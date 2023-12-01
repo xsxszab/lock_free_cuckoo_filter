@@ -30,6 +30,7 @@ int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
     std::string fingerprint = md5_fingerprint(key);
     uint32_t hash1 = jenkins_hash(key) % table_size;
     uint32_t hash2 = hash1 ^ (jenkins_hash(fingerprint) % table_size);
+    // iterate for every slot in an table entry
     for (int slot = 0; slot < NUM_ITEMS_PER_ENTRY; slot++) {
         while (true) {
             // first round search start
@@ -39,8 +40,8 @@ int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
                 if (get_marked(ptr1)) {         // help relocate this item
                                                 // TODO: help relocate
                     continue;
-                } else if (fingerprint ==
-                           *(std::string*)ptr1) {  // item found, return
+                } else if (fingerprint == *(std::string*)get_real_pointer(
+                                              ptr1)) {  // item found, return
                     pointer = ptr1;
                     return slot;
                 }
@@ -52,7 +53,8 @@ int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
                 if (get_marked(ptr2)) {         // help relocate this item
                     // TODO: help relocate
                     continue;
-                } else if (fingerprint == *(std::string*)ptr2) {
+                } else if (fingerprint ==
+                           *(std::string*)get_real_pointer(ptr2)) {
                     pointer = ptr2;
                     return slot + NUM_ITEMS_PER_ENTRY;
                 }
