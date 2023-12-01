@@ -16,10 +16,11 @@
 #include <string>
 #include <vector>
 
+/**
+ * @brief A coarse-grained locked cuckoo filter implementation.
+ */
 class SequentialFilter {
    public:
-    // capacity: number of entries the table should have
-
     /**
      * @brief construct a coarse grained locked cuckoo filter instance
      * @param[in] capacity size of the hash table
@@ -43,22 +44,33 @@ class SequentialFilter {
      */
     ~SequentialFilter();
 
-    // insert a key into the hash table. Return true if successfully inserted
-    // new key, false is the insertion failed (hash table full)
+    /**
+     * @brief insert a key into the hash table
+     * @param[in] key the key to be inserted
+     * @return true if successfully inserted the key, false if failed (hash
+     * table full).
+     */
     bool insert(const std::string& key);
-    // find is a given key is present in the hash table. Return true if present,
-    // false if not.
+
+    /**
+     * @brief find if a given key is present in the hash table. Return true if
+     * present, false if not.
+     * @param[in]  key The key to search.
+     *
+     * @return true if found, false if not found.
+     */
     bool find(const std::string& key);
 
-    // remove a key from the hash table. Return true if the key is deleted,
-    // false if the key is not present in the table. Note that when using this
-    // filter, it is the user's responsibility to ensure that any key must be in
-    // the table before deletion, i.e., this function must always return true,
-    // otherwise the filter's behavior is undefined.
+    /**
+     * @brief Remove a key from the hash table.
+     * @param[in] key The key to delete.
+     *
+     * @return true if successfully deleted the key, false if not. Note that it
+     * is the user's responsibility to ensure that any key must be present
+     * before deletion, i.e., this function must always return true, otherwise
+     * the filter's behavior is undefined.
+     */
     bool remove(const std::string& key);
-
-    // return the hash table's size (number of entries, not table_size *
-    // NUM_ITEMS_PER_ENTRY)
 
     /**
      * @brief get the hash table's size
@@ -67,11 +79,20 @@ class SequentialFilter {
     int size() const;
 
    private:
-    // how many entries are in the hash table, note that one entry contains
-    // NUM_ITEMS_PER_ENTRY item slots.
+    /**
+     * @brief  how many entries are in the hash table, note that one entry
+     * contains NUM_ITEMS_PER_ENTRY item slots.
+     */
     int table_size;
-    // true if print out debug information, false if not
+
+    /**
+     * @brief true if print out debug information, false if not
+     */
     bool verbose;
+
+    /**
+     * @brief the internal hash table
+     */
     std::vector<std::array<std::string, NUM_ITEMS_PER_ENTRY>> hash_table;
 
     // mutex for concurrent table access
