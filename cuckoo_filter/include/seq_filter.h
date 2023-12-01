@@ -95,7 +95,9 @@ class SequentialFilter {
      */
     std::vector<std::array<std::string, NUM_ITEMS_PER_ENTRY>> hash_table;
 
-    // mutex for concurrent table access
+    /**
+     * @brief mutex for concurrent table access
+     */
     std::mutex mtx;
 };
 

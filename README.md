@@ -18,10 +18,10 @@ A lock-free cuckoo filter implementation.
 
 
 ### References
-[Cuckoo Filter: Practically Better Than Bloom](https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf)
+[1] [Cuckoo Filter: Practically Better Than Bloom](https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf)
 
-[Lock-free Cuckoo Hashing](https://ieeexplore.ieee.org/document/6888938)
+[2] [Lock-free Cuckoo Hashing](https://ieeexplore.ieee.org/document/6888938)
 
-[MemC3: Compact and Concurrent MemCache with Dumber Caching and Smarter Hashing](https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final197.pdf)
+[3] [MemC3: Compact and Concurrent MemCache with Dumber Caching and Smarter Hashing](https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final197.pdf)
 
-[Hazard pointers: safe memory reclamation for lock-free objects](https://ieeexplore.ieee.org/document/1291819)
+[4] [Hazard pointers: safe memory reclamation for lock-free objects](https://ieeexplore.ieee.org/document/1291819)

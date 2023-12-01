@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.4.1)
 
 project(cuckoo_filter
-        VERSION 0.2
+        VERSION 0.3
         DESCRIPTION "lock-free cuckoo filter"
         LANGUAGES C CXX)
 
