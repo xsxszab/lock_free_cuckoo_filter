@@ -12,8 +12,26 @@
 #include <pointer_utils.h>
 
 #include <array>
+#include <new>
 #include <string>
+#include <unordered_set>
 #include <vector>
+
+#define MAX_RETIRED_POINTER_COUNT 128
+#define MAX_HAZARD_POINTER_COUNT (NUM_ITEMS_PER_ENTRY * 2)
+
+// const int hardware_destructive_interference_size = 128;
+
+/**
+ * @brief hash table entry
+ */
+typedef struct {
+    std::string str;
+} HashEntry;
+
+// typedef struct {
+//     alignas(hardware_destructive_interference_size) int val;
+// } AlignedInt;
 
 /**
  * @brief A lock-free cuckoo filter implementation. Note that since the cuckoo
@@ -122,6 +140,22 @@ class LockFreeCuckooFilter {
     bool verbose;
 
     /**
+     * @brief a per-thread record of hazard pointers.
+     */
+    std::vector<std::array<HashEntry*, MAX_HAZARD_POINTER_COUNT>> hazard_ptrs;
+
+    // std::vector<AlignedInt> hazard_ptr_count;
+
+    /**
+     * @brief a per-thread record of retired pointers, denoting pointers that
+     * are no longer used by the current thread but may be accessed by other
+     * threads.
+     */
+    std::vector<std::vector<HashEntry*>> retired_ptrs;
+
+    // std::vector<AlignedInt> retired_ptr_count;
+
+    /**
      * @brief check counter value.
      * For detailed explanation please refer to
      * https://ieeexplore.ieee.org/document/6888938, page 4
@@ -130,10 +164,30 @@ class LockFreeCuckooFilter {
     bool check_counter(const int ts1, const int ts2, const int ts1x,
                        const int ts2x);
 
+    int mark_hazard(table_pointer pointer, int tid);
+
+    void update_hazard(table_pointer pointer, int index, int tid);
+
+    void unmark_hazard(int index, int tid);
+
+    /**
+     * @brief mark a pointer as retired by putting it into retired_ptrs. Note
+     * that only the real pointer part of the table pointer will be stored.
+     * @param[in] pointer a table pointer
+     * @param[in] tid caller's thread id
+     */
     void retire_key(table_pointer pointer, const int tid);
 
-    void help_relocate();
-    bool relocate();
+    void help_relocate(int table_idx, int slot_idx, bool initiator, int tid);
+
+    /**
+     * @brief free current thread's retired pointers that are not being used by
+     * any thread, then remove them from retired_ptrs.
+     * @param[in] tid caller's thread id
+     */
+    void free_hazard_pointers(int tid);
+
+    bool relocate(int table_idx, int slot_idx, int tid);
 };
 
 #endif
