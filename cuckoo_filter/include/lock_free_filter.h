@@ -18,7 +18,7 @@
 #include <vector>
 
 #define MAX_RETIRED_POINTER_COUNT 128
-#define MAX_HAZARD_POINTER_COUNT (NUM_ITEMS_PER_ENTRY * 2)
+#define MAX_HAZARD_POINTER_COUNT 2
 
 // const int hardware_destructive_interference_size = 128;
 
@@ -75,14 +75,14 @@ class LockFreeCuckooFilter {
      */
     bool insert(const std::string& key, const int tid);
 
-    /**
-     * @brief Find if a given key is present in the filter.
-     * @param[in]  key The key to search.
-     * @param[in] tid the caller's thread id
-     *
-     * @return (TODO: return slot index, need better explanation)
-     */
-    int find(const std::string& key, const int tid);
+    // /**
+    //  * @brief Find if a given key is present in the filter.
+    //  * @param[in]  key The key to search.
+    //  * @param[in] tid the caller's thread id
+    //  *
+    //  * @return (TODO: return slot index, need better explanation)
+    //  */
+    // int find(const std::string& key, const int tid);
 
     /**
      * @brief Find if a given key is present in the filter. If it is present,
@@ -164,11 +164,15 @@ class LockFreeCuckooFilter {
     bool check_counter(const int ts1, const int ts2, const int ts1x,
                        const int ts2x);
 
-    int mark_hazard(table_pointer pointer, int tid);
+    // int mark_hazard(table_pointer pointer, int tid);
 
-    void update_hazard(table_pointer pointer, int index, int tid);
+    // void update_hazard(table_pointer pointer, int index, int tid);
 
-    void unmark_hazard(int index, int tid);
+    // void unmark_hazard(int index, int tid);
+
+    void mark_hazard(HashEntry* real_pointer, int index, int tid);
+
+    void clear_hazard(int tid);
 
     /**
      * @brief mark a pointer as retired by putting it into retired_ptrs. Note

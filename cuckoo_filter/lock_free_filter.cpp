@@ -1,5 +1,7 @@
 #include <lock_free_filter.h>
 
+#include <iostream>
+
 LockFreeCuckooFilter::LockFreeCuckooFilter(int capacity, int _thread_count) {
     table_size = capacity;
     hash_table.resize(table_size);
@@ -23,9 +25,16 @@ LockFreeCuckooFilter::LockFreeCuckooFilter(int capacity, int _thread_count,
         hazard_ptrs[i].fill(nullptr);
     }
     retired_ptrs.resize(_thread_count);
+    if (verbose) {
+        std::cout << "Cuckoo Filter started" << std::endl;
+    }
 }
 
-LockFreeCuckooFilter::~LockFreeCuckooFilter() {}
+LockFreeCuckooFilter::~LockFreeCuckooFilter() {
+    if (verbose) {
+        std::cout << "Cuckoo Filter terminated" << std::endl;
+    }
+}
 
 bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
     HashEntry* new_entry = new HashEntry();
@@ -36,20 +45,59 @@ bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
 
     table_pointer ptr1;
     while (true) {
-        int location = find(key, ptr1, tid);
-        // TODO
+        for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
+            ptr1 = hash_table[hash1][i];
+            // found an empty slot
+            if (get_real_pointer(ptr1) == 0) {
+                if (__sync_bool_compare_and_swap(
+                        &hash_table[hash1][i], ptr1,
+                        create_pointer(get_counter(ptr1), (uint64_t)new_entry,
+                                       false))) {
+                    return true;
+                }
+            }
+
+            ptr1 = hash_table[hash2][i];
+            // found an empty slot
+            if (get_real_pointer(ptr1) == 0) {
+                if (__sync_bool_compare_and_swap(
+                        &hash_table[hash2][i], ptr1,
+                        create_pointer(get_counter(ptr1), (uint64_t)new_entry,
+                                       false))) {
+                    return true;
+                }
+            }
+            int kick_slot = rand() % NUM_ITEMS_PER_ENTRY;
+            if (relocate(hash1, kick_slot, tid)) {
+                // kicked out an item, try inseration again
+                ptr1 = hash_table[hash1][kick_slot];
+                if (get_real_pointer(ptr1) == 0) {
+                    if (__sync_bool_compare_and_swap(
+                            &hash_table[hash1][kick_slot], ptr1,
+                            create_pointer(get_counter(ptr1),
+                                           (uint64_t)new_entry, false))) {
+                        return true;
+                    }
+                }
+                continue;
+            } else {
+                // inseration failed
+                return false;
+            }
+        }
     }
+
+    // should not happen
     return false;
 }
 
-int LockFreeCuckooFilter::find(const std::string& key, const int tid) {
-    // TODO: a modified version of find that does not return found pointer
-    return 0;
-}
+// int LockFreeCuckooFilter::find(const std::string& key, const int tid) {
+//     // TODO: a modified version of find that does not return found pointer
+//     return 0;
+// }
 
 int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
                                const int tid) {
-    // TODO: hazard pointer related stuff
     std::string fingerprint = md5_fingerprint(key);
     uint32_t hash1 = jenkins_hash(key) % table_size;
     uint32_t hash2 = hash1 ^ (jenkins_hash(fingerprint) % table_size);
@@ -58,11 +106,11 @@ int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
         while (true) {
             // first round search start
             table_pointer ptr1 = hash_table[hash1][slot];
-            mark_hazard(ptr1, tid);
+            mark_hazard((HashEntry*)get_real_pointer(ptr1), 0, tid);
             int ts1 = get_counter(ptr1);
             if (get_real_pointer(ptr1) != 0) {  // first location not null
                 if (get_marked(ptr1)) {         // help relocate this item
-                                                // TODO: help relocate
+                    help_relocate(hash1, slot, false, tid);
                     continue;
                 } else if (fingerprint == *(std::string*)get_real_pointer(
                                               ptr1)) {  // item found, return
@@ -73,9 +121,10 @@ int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
 
             table_pointer ptr2 = hash_table[hash2][slot];
             int ts2 = get_counter(ptr2);
+            mark_hazard((HashEntry*)get_real_pointer(ptr2), 1, tid);
             if (get_real_pointer(ptr2) != 0) {  // second location not null
                 if (get_marked(ptr2)) {         // help relocate this item
-                    // TODO: help relocate
+                    help_relocate(hash2, slot, false, tid);
                     continue;
                 } else if (fingerprint ==
                            *(std::string*)get_real_pointer(ptr2)) {
@@ -121,25 +170,35 @@ bool LockFreeCuckooFilter::check_counter(const int ts1, const int ts2,
     return cond1 && cond2 && cond3;
 }
 
-int LockFreeCuckooFilter::mark_hazard(table_pointer pointer, int tid) {
-    for (int i = 0; i < (int)hazard_ptrs[tid].size(); i++) {
-        if (hazard_ptrs[tid][i] == nullptr) {
-            hazard_ptrs[tid][i] = (HashEntry*)get_real_pointer(pointer);
-            return i;
-        }
-    }
-    // should not happen
-    return hazard_ptrs[tid].size();
+void LockFreeCuckooFilter::mark_hazard(HashEntry* real_pointer, int index,
+                                       int tid) {
+    hazard_ptrs[tid][index] = real_pointer;
 }
 
-void LockFreeCuckooFilter::update_hazard(table_pointer pointer, int index,
-                                         int tid) {
-    hazard_ptrs[tid][index] = (HashEntry*)get_real_pointer(pointer);
+void LockFreeCuckooFilter::clear_hazard(int tid) {
+    mark_hazard(nullptr, 0, tid);
+    mark_hazard(nullptr, 1, tid);
 }
 
-void LockFreeCuckooFilter::unmark_hazard(int index, int tid) {
-    hazard_ptrs[tid][index] = nullptr;
-}
+// int LockFreeCuckooFilter::mark_hazard(table_pointer pointer, int tid) {
+//     for (int i = 0; i < (int)hazard_ptrs[tid].size(); i++) {
+//         if (hazard_ptrs[tid][i] == nullptr) {
+//             hazard_ptrs[tid][i] = (HashEntry*)get_real_pointer(pointer);
+//             return i;
+//         }
+//     }
+//     // should not happen
+//     return hazard_ptrs[tid].size();
+// }
+
+// void LockFreeCuckooFilter::update_hazard(table_pointer pointer, int index,
+//                                          int tid) {
+//     hazard_ptrs[tid][index] = (HashEntry*)get_real_pointer(pointer);
+// }
+
+// void LockFreeCuckooFilter::unmark_hazard(int index, int tid) {
+//     hazard_ptrs[tid][index] = nullptr;
+// }
 
 void LockFreeCuckooFilter::retire_key(table_pointer pointer, const int tid) {
     retired_ptrs[tid].push_back((HashEntry*)get_real_pointer(pointer));
@@ -150,16 +209,16 @@ void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
     while (1) {
         table_pointer ptr1 = hash_table[table_idx][slot_idx];
         HashEntry* real_ptr1 = (HashEntry*)get_real_pointer(ptr1);
-        int hazard_idx1 = mark_hazard(ptr1, tid);
+        mark_hazard(real_ptr1, 0, tid);
         while (initiator && !get_marked(ptr1)) {
             if (real_ptr1 == nullptr) {
-                unmark_hazard(hazard_idx1, tid);
                 return;
             }
             __sync_bool_compare_and_swap(&hash_table[table_idx][slot_idx], ptr1,
                                          get_new_mark(ptr1, true));
             ptr1 = hash_table[table_idx][slot_idx];
-            update_hazard(ptr1, hazard_idx1, tid);
+            mark_hazard(real_ptr1, 0, tid);
+
             // entry has been modified by other threads, try again
             if (ptr1 != hash_table[table_idx][slot_idx]) {
                 continue;
@@ -168,14 +227,13 @@ void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
         }
 
         if (!get_marked(ptr1)) {
-            unmark_hazard(hazard_idx1, tid);
             return;
         }
 
         int new_hash = table_idx ^ (jenkins_hash(real_ptr1->str) % table_size);
         table_pointer ptr2 = hash_table[new_hash][slot_idx];
         HashEntry* real_ptr2 = (HashEntry*)get_real_pointer(ptr2);
-        int hazard_idx2 = mark_hazard(ptr2, tid);
+        mark_hazard(real_ptr2, 1, tid);
         if (ptr2 != hash_table[new_hash][slot_idx]) {
             continue;
         }
@@ -195,9 +253,6 @@ void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
                 __sync_bool_compare_and_swap(
                     &hash_table[table_idx][slot_idx], ptr1,
                     create_pointer(counter1 + 1, (uint64_t) nullptr, false));
-
-                unmark_hazard(hazard_idx1, tid);
-                unmark_hazard(hazard_idx2, tid);
                 return;
             }
         }
@@ -206,8 +261,6 @@ void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
             __sync_bool_compare_and_swap(
                 &hash_table[new_hash][slot_idx], ptr1,
                 create_pointer(counter1 + 1, (uint64_t) nullptr, false));
-            unmark_hazard(hazard_idx1, tid);
-            unmark_hazard(hazard_idx2, tid);
             return;
         }
 
@@ -216,8 +269,6 @@ void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
         __sync_bool_compare_and_swap(
             &hash_table[new_hash][slot_idx], ptr1,
             create_pointer(counter1 + 1, (uint64_t)real_ptr1, true));
-        unmark_hazard(hazard_idx1, tid);
-        unmark_hazard(hazard_idx2, tid);
         return;
     }
 }
