@@ -116,6 +116,8 @@ class LockFreeCuckooFilter {
      */
     int size() const;
 
+    void change_verbose(const bool _verbose);
+
    private:
     /**
      * @brief The hash table's size (number of entries). Since cuckoo filter

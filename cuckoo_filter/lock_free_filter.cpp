@@ -31,6 +31,15 @@ LockFreeCuckooFilter::LockFreeCuckooFilter(int capacity, int _thread_count,
 }
 
 LockFreeCuckooFilter::~LockFreeCuckooFilter() {
+    // delete all items stored in the hash table
+    for (int i = 0; i < table_size; i++) {
+        for (int j = 0; j < NUM_ITEMS_PER_ENTRY; j++) {
+            HashEntry* ptr = (HashEntry*)get_real_pointer(hash_table[i][j]);
+            if (ptr != nullptr) {
+                delete ptr;
+            }
+        }
+    }
     if (verbose) {
         std::cout << "Cuckoo Filter terminated" << std::endl;
     }
@@ -227,6 +236,10 @@ bool LockFreeCuckooFilter::remove(const std::string& key, const int tid) {
 
 int LockFreeCuckooFilter::size() const { return table_size; }
 
+void LockFreeCuckooFilter::change_verbose(const bool _verbose) {
+    verbose = _verbose;
+}
+
 // void LockFreeCuckooFilter::mark_hazard(table_pointer pointer, int tid) {
 //     hazard_ptrs[tid].push_back((HashEntry*)get_real_pointer(pointer));
 // }
@@ -275,8 +288,12 @@ void LockFreeCuckooFilter::retire_key(table_pointer pointer, const int tid) {
     retired_ptrs[tid].push_back((HashEntry*)get_real_pointer(pointer));
 }
 
+// TODO: re-check this function
 void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
                                          bool initiator, int tid) {
+    if (verbose) {
+        std::cout << "tid " << tid << ": help relocate" << std::endl;
+    }
     while (1) {
         table_pointer ptr1 = hash_table[table_idx][slot_idx];
         HashEntry* real_ptr1 = (HashEntry*)get_real_pointer(ptr1);
@@ -285,15 +302,12 @@ void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
             if (real_ptr1 == nullptr) {
                 return;
             }
+
+            // mark ptr1 as being relocated
             __sync_bool_compare_and_swap(&hash_table[table_idx][slot_idx], ptr1,
                                          get_new_mark(ptr1, true));
             ptr1 = hash_table[table_idx][slot_idx];
-            mark_hazard(real_ptr1, 0, tid);
-
-            // entry has been modified by other threads, try again
-            if (ptr1 != hash_table[table_idx][slot_idx]) {
-                continue;
-            }
+            mark_hazard((HashEntry*)get_real_pointer(ptr1), 0, tid);
             real_ptr1 = (HashEntry*)get_real_pointer(ptr1);
         }
 
@@ -305,9 +319,6 @@ void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
         table_pointer ptr2 = hash_table[new_hash][slot_idx];
         HashEntry* real_ptr2 = (HashEntry*)get_real_pointer(ptr2);
         mark_hazard(real_ptr2, 1, tid);
-        if (ptr2 != hash_table[new_hash][slot_idx]) {
-            continue;
-        }
 
         uint16_t counter1 = get_counter(ptr1);
         uint16_t counter2 = get_counter(ptr2);
@@ -343,6 +354,7 @@ void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
         // occupied by another key
         __sync_bool_compare_and_swap(
             &hash_table[new_hash][slot_idx], ptr1,
+            // TODO: check the mark, is it really true?
             create_pointer(counter1 + 1, (uint64_t)real_ptr1, true));
         return;
     }
@@ -356,14 +368,14 @@ void LockFreeCuckooFilter::free_hazard_pointers(int tid) {
         std::cout << "tid " << tid << ": try to free retired items"
                   << std::endl;
     }
-    std::unordered_set<HashEntry*> record;
+    std::unordered_set<HashEntry*> hazard_record;
 
     // record all hazard pointers using an unordered set
     for (int i = 0; i < thread_count; i++) {
         for (int j = 0; j < MAX_HAZARD_POINTER_COUNT; j++) {
             HashEntry* ptr = hazard_ptrs[i][j];
             if (ptr != nullptr) {
-                record.insert(ptr);
+                hazard_record.insert(ptr);
             }
         }
     }
@@ -375,7 +387,7 @@ void LockFreeCuckooFilter::free_hazard_pointers(int tid) {
     // following code won't cause out-of-bound error
     for (int i = 0; i < old_count; i++) {
         // retired pointer still in use, cannot free it
-        if (record.count(retired_ptrs[tid][i])) {
+        if (hazard_record.count(retired_ptrs[tid][i])) {
             retired_ptrs[tid][new_count++] = retired_ptrs[tid][i];
         } else {  // say goodbye to the retired pointer
             delete retired_ptrs[tid][i];
