@@ -310,7 +310,8 @@ void LockFreeCuckooFilter::retire_key(table_pointer pointer, const int tid) {
 void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
                                          bool initiator, int tid) {
     if (verbose) {
-        std::cout << "tid " << tid << ": help relocate" << std::endl;
+        std::cout << "tid " << tid << ": help relocate item in bucket "
+                  << table_idx << ", slot " << slot_idx << std::endl;
     }
     while (1) {
         table_pointer ptr1 = hash_table[table_idx][slot_idx];
