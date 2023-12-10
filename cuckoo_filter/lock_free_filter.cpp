@@ -70,8 +70,8 @@ bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
                                        false))) {
                     if (verbose) {
                         std::cout << "tid " << tid
-                                  << ": inserted key in bucket hash1, slot "
-                                  << i << std::endl;
+                                  << ": inserted key in bucket " << hash1
+                                  << ", slot " << i << std::endl;
                     }
                     return true;
                 }
@@ -86,8 +86,8 @@ bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
                                        false))) {
                     if (verbose) {
                         std::cout << "tid " << tid
-                                  << ": inserted key in bucket hash2, slot "
-                                  << i << std::endl;
+                                  << ": inserted key in bucket " << hash2
+                                  << ", slot " << i << std::endl;
                     }
                     return true;
                 }
@@ -106,8 +106,8 @@ bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
                                        false))) {
                     if (verbose) {
                         std::cout << "tid " << tid
-                                  << ": inserted key in bucket hash1, slot "
-                                  << kick_slot << std::endl;
+                                  << ": inserted key in bucket " << hash1
+                                  << ", slot " << kick_slot << std::endl;
                     }
                     return true;
                 }
@@ -438,7 +438,7 @@ path_discovery:
     }
     do {
         table_pointer ptr1 = hash_table[table_idx][slot_idx];
-
+        mark_hazard((HashEntry*)get_real_pointer(ptr1), 0, tid);
         // help relocate destionation slot until it is unmarked
         while (get_marked(ptr1)) {
             help_relocate(table_idx, slot_idx, false, tid);
@@ -454,27 +454,31 @@ path_discovery:
         } else {
             found = true;
         }
+
         // loop until a valid replacement path is found or maximum depth reached
     } while (!found && ++depth < NUM_MAX_KICKS);
 
+    depth--;
+
     if (found) {
+        // std::cout << "depth: " << depth << std::endl;
         // traverse the path in reverse order
-        for (int i = depth - 1; i >= 0; i--) {
+        for (int i = depth; i >= 0; i--) {
             int source_idx = route[depth];
-            std::cout << source_idx << " " << table_size << std::endl;
-            table_pointer ptr1 = hash_table[source_idx][slot_idx];
-            if (get_marked(ptr1)) {
+            // std::cout << source_idx << " " << table_size << std::endl;
+            table_pointer source_ptr = hash_table[source_idx][slot_idx];
+            if (get_marked(source_ptr)) {
                 help_relocate(source_idx, slot_idx, false, tid);
-                ptr1 = hash_table[source_idx][slot_idx];
+                source_ptr = hash_table[source_idx][slot_idx];
             }
-            HashEntry* real_ptr1 = (HashEntry*)get_real_pointer(ptr1);
+            HashEntry* real_ptr1 = (HashEntry*)get_real_pointer(source_ptr);
             if (real_ptr1 == nullptr) {
                 continue;
             }
-
             int dest_idx = get_next_hash_index(source_idx, real_ptr1->str);
-            table_pointer ptr2 = hash_table[dest_idx][slot_idx];
-            if ((HashEntry*)get_real_pointer(ptr2) != nullptr) {
+            table_pointer dest_ptr = hash_table[dest_idx][slot_idx];
+            mark_hazard((HashEntry*)get_real_pointer(dest_ptr), 1, tid);
+            if ((HashEntry*)get_real_pointer(dest_ptr) != nullptr) {
                 start_level = i + 1;
                 goto path_discovery;
             }
