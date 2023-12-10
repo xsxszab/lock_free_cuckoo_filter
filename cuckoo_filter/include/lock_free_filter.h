@@ -26,7 +26,7 @@
  * @brief hash table entry
  */
 typedef struct {
-    std::string str;
+    std::string str;  // stores fingerprint
 } HashEntry;
 
 // typedef struct {
@@ -165,6 +165,8 @@ class LockFreeCuckooFilter {
      */
     bool check_counter(const int ts1, const int ts2, const int ts1x,
                        const int ts2x);
+
+    int get_next_hash_index(const int curr_idx, const std::string fingerprint);
 
     // int mark_hazard(table_pointer pointer, int tid);
 

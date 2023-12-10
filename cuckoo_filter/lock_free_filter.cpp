@@ -53,8 +53,8 @@ bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
     HashEntry* new_entry = new HashEntry();
     std::string fingerprint = md5_fingerprint(key);
     new_entry->str = fingerprint;
-    uint32_t hash1 = jenkins_hash(key) % table_size;
-    uint32_t hash2 = hash1 ^ (jenkins_hash(fingerprint) % table_size);
+    int hash1 = jenkins_hash(key) % table_size;
+    int hash2 = get_next_hash_index(hash1, fingerprint);
 
     table_pointer ptr1;
     while (true) {
@@ -141,7 +141,8 @@ int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
     }
     std::string fingerprint = md5_fingerprint(key);
     uint32_t hash1 = jenkins_hash(key) % table_size;
-    uint32_t hash2 = hash1 ^ (jenkins_hash(fingerprint) % table_size);
+    uint32_t hash2 = get_next_hash_index(hash1, fingerprint);
+
     // iterate for every slot in an table entry
     for (int slot = 0; slot < NUM_ITEMS_PER_ENTRY; slot++) {
         while (true) {
@@ -215,7 +216,7 @@ int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
 bool LockFreeCuckooFilter::remove(const std::string& key, const int tid) {
     std::string fingerprint = md5_fingerprint(key);
     uint32_t hash1 = jenkins_hash(key) % table_size;
-    uint32_t hash2 = hash1 ^ (jenkins_hash(fingerprint) % table_size);
+    uint32_t hash2 = get_next_hash_index(hash1, fingerprint);
     table_pointer ptr1;
     while (true) {
         int location = find(key, ptr1, tid);
@@ -267,6 +268,11 @@ bool LockFreeCuckooFilter::check_counter(const int ts1, const int ts2,
     return cond1 && cond2 && cond3;
 }
 
+int LockFreeCuckooFilter::get_next_hash_index(const int curr_idx,
+                                              const std::string fingerprint) {
+    return (curr_idx ^ (jenkins_hash(fingerprint) % table_size)) % table_size;
+}
+
 void LockFreeCuckooFilter::mark_hazard(HashEntry* real_pointer, int index,
                                        int tid) {
     hazard_ptrs[tid][index] = real_pointer;
@@ -301,7 +307,6 @@ void LockFreeCuckooFilter::retire_key(table_pointer pointer, const int tid) {
     retired_ptrs[tid].push_back((HashEntry*)get_real_pointer(pointer));
 }
 
-// TODO: re-check this function
 void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
                                          bool initiator, int tid) {
     if (verbose) {
@@ -328,7 +333,7 @@ void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
             return;
         }
 
-        int new_hash = table_idx ^ (jenkins_hash(real_ptr1->str) % table_size);
+        int new_hash = get_next_hash_index(table_idx, real_ptr1->str);
         table_pointer ptr2 = hash_table[new_hash][slot_idx];
         HashEntry* real_ptr2 = (HashEntry*)get_real_pointer(ptr2);
         mark_hazard(real_ptr2, 1, tid);
@@ -367,7 +372,6 @@ void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
         // occupied by another key
         __sync_bool_compare_and_swap(
             &hash_table[new_hash][slot_idx], ptr1,
-            // TODO: check the mark, is it really true?
             create_pointer(counter1 + 1, (uint64_t)real_ptr1, true));
         return;
     }
@@ -420,13 +424,18 @@ bool LockFreeCuckooFilter::relocate(int table_idx, int slot_idx, int tid) {
                   << ", slot " << slot_idx << std::endl;
     }
 
-    bool found = false;
     int route[NUM_MAX_KICKS];
     int start_level = 0;
-    int depth = start_level;
 
 path_discovery:
-
+    bool found = false;
+    int depth = start_level;
+    for (int i = 0; i < NUM_MAX_KICKS; i++) {
+        route[i] = 0;
+    }
+    if (verbose) {
+        std::cout << "tid " << tid << ": start path discovery" << std::endl;
+    }
     do {
         table_pointer ptr1 = hash_table[table_idx][slot_idx];
 
@@ -441,31 +450,31 @@ path_discovery:
             route[depth] = table_idx;
             HashEntry* real_ptr1 = (HashEntry*)get_real_pointer(ptr1);
             // calculate replacement location
-            table_idx = table_idx ^ (jenkins_hash(real_ptr1->str) % table_size);
-
+            table_idx = get_next_hash_index(table_idx, real_ptr1->str);
         } else {
             found = true;
         }
         // loop until a valid replacement path is found or maximum depth reached
-    } while (!found || ++depth < NUM_MAX_KICKS);
+    } while (!found && ++depth < NUM_MAX_KICKS);
 
     if (found) {
         // traverse the path in reverse order
         for (int i = depth - 1; i >= 0; i--) {
             int source_idx = route[depth];
+            std::cout << source_idx << " " << table_size << std::endl;
             table_pointer ptr1 = hash_table[source_idx][slot_idx];
             if (get_marked(ptr1)) {
                 help_relocate(source_idx, slot_idx, false, tid);
                 ptr1 = hash_table[source_idx][slot_idx];
             }
-            if ((HashEntry*)get_real_pointer(ptr1) == nullptr) {
+            HashEntry* real_ptr1 = (HashEntry*)get_real_pointer(ptr1);
+            if (real_ptr1 == nullptr) {
                 continue;
             }
-            HashEntry* real_ptr1 = (HashEntry*)get_real_pointer(ptr1);
-            int dest_idx =
-                source_idx ^ (jenkins_hash(real_ptr1->str) % table_size);
+
+            int dest_idx = get_next_hash_index(source_idx, real_ptr1->str);
             table_pointer ptr2 = hash_table[dest_idx][slot_idx];
-            if ((HashEntry*)get_real_pointer(ptr2) == nullptr) {
+            if ((HashEntry*)get_real_pointer(ptr2) != nullptr) {
                 start_level = i + 1;
                 goto path_discovery;
             }
