@@ -402,5 +402,17 @@ void LockFreeCuckooFilter::free_hazard_pointers(int tid) {
 }
 
 bool LockFreeCuckooFilter::relocate(int table_idx, int slot_idx, int tid) {
-    return false;
+    bool found = false;
+    int route[NUM_MAX_KICKS];
+    int start_level = 0;
+    int depth = start_level;
+    do {
+        table_pointer ptr1 = hash_table[table_idx][slot_idx];
+        while (get_marked(ptr1)) {
+            help_relocate(table_idx, slot_idx, false, tid);
+            // TODO
+        }
+    } while (!found || ++depth < NUM_MAX_KICKS);
+
+    return found;
 }
