@@ -107,16 +107,25 @@ class LockFreeCuckooFilter {
      */
     bool remove(const std::string& key, const int tid);
 
-    // return the hash table's size (number of entries, not the table_size *
-    // NUM_ITEMS_PER_ENTRY). tid: caller's thread id.
-
     /**
      * @brief get the hash table's size.
      * @return return the hash table's size.
      */
     int size() const;
 
+    /**
+     * @brief change the filter's verbose mode
+     * @param[in] _verbose new verbose mode
+     */
     void change_verbose(const bool _verbose);
+
+    /**
+     * @brief Reset the filter with new capacity and thread count.
+     * @param[in] capacity hash table size
+     * @param[in] _thread_count number of threads that will access this filter
+     * concurrently
+     */
+    void reset(const int capacity, const int _thread_count);
 
    private:
     /**
@@ -166,6 +175,12 @@ class LockFreeCuckooFilter {
     bool check_counter(const int ts1, const int ts2, const int ts1x,
                        const int ts2x);
 
+    /**
+     * @brief calculate a key's next hash table index based on the current index
+     * and its fingerprint.
+     * @param[in] curr_idx current index
+     * @param[in] fingerprint the key's MD5 fingerprint
+     */
     int get_next_hash_index(const int curr_idx, const std::string fingerprint);
 
     // int mark_hazard(table_pointer pointer, int tid);
@@ -174,8 +189,19 @@ class LockFreeCuckooFilter {
 
     // void unmark_hazard(int index, int tid);
 
+    /**
+     * @brief mark a pointer as hazard to prevent it from being freed by other
+     * threads
+     * @param[in] real_pointer the pointer to mark
+     * @param[in] index the index of hazard_ptrs
+     * @param[in] tid caller's thread id
+     */
     void mark_hazard(HashEntry* real_pointer, int index, int tid);
 
+    /**
+     * @brief clear current thread's hazard pointer list
+     * @param[in] tid caller's thread id
+     */
     void clear_hazard(int tid);
 
     /**
@@ -186,6 +212,12 @@ class LockFreeCuckooFilter {
      */
     void retire_key(table_pointer pointer, const int tid);
 
+    /**
+     * @brief help relocate a marked item to its alternative location.
+     * @param[in] table_idx the item's index in the hash table
+     * @param[in] slot_idx which slot the item is in
+     * @param[in] tid caller's thread id
+     */
     void help_relocate(int table_idx, int slot_idx, bool initiator, int tid);
 
     /**
@@ -195,6 +227,12 @@ class LockFreeCuckooFilter {
      */
     void free_hazard_pointers(int tid);
 
+    /**
+     * @brief relocate an item to make its original slot empty.
+     * @param[in] table_idx the item's index in the hash table
+     * @param[in] slot_idx which slot the item is in
+     * @param[in] tid caller's thread id
+     */
     bool relocate(int table_idx, int slot_idx, int tid);
 };
 

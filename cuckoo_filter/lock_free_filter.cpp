@@ -254,6 +254,30 @@ void LockFreeCuckooFilter::change_verbose(const bool _verbose) {
     verbose = _verbose;
 }
 
+void LockFreeCuckooFilter::reset(const int capacity, const int _thread_count) {
+    for (int i = 0; i < table_size; i++) {
+        for (int j = 0; j < NUM_ITEMS_PER_ENTRY; j++) {
+            HashEntry* ptr = (HashEntry*)get_real_pointer(hash_table[i][j]);
+            if (ptr != nullptr) {
+                delete ptr;
+            }
+        }
+    }
+
+    hash_table.clear();
+    hazard_ptrs.clear();
+    retired_ptrs.clear();
+
+    table_size = capacity;
+    thread_count = _thread_count;
+    hash_table.resize(table_size);
+    hazard_ptrs.resize(thread_count);
+    for (int i = 0; i < thread_count; i++) {
+        hazard_ptrs[i].fill(nullptr);
+    }
+    retired_ptrs.resize(thread_count);
+}
+
 // void LockFreeCuckooFilter::mark_hazard(table_pointer pointer, int tid) {
 //     hazard_ptrs[tid].push_back((HashEntry*)get_real_pointer(pointer));
 // }
