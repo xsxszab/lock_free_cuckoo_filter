@@ -47,12 +47,12 @@ LockFreeCuckooFilter::~LockFreeCuckooFilter() {
 
 bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
     if (verbose) {
-        std::cout << "tid " << tid << ": try to insert key " << key
-                  << std::endl;
+        std::cout << "tid " << tid << ": try to insert key "
+                  << key.substr(0, 16) << std::endl;
     }
     HashEntry* new_entry = new HashEntry();
-    new_entry->str = key;
     std::string fingerprint = md5_fingerprint(key);
+    new_entry->str = fingerprint;
     uint32_t hash1 = jenkins_hash(key) % table_size;
     uint32_t hash2 = hash1 ^ (jenkins_hash(fingerprint) % table_size);
 
@@ -128,15 +128,16 @@ bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
     return false;
 }
 
-// int LockFreeCuckooFilter::find(const std::string& key, const int tid) {
-//     // TODO: a modified version of find that does not return found pointer
-//     return 0;
-// }
+int LockFreeCuckooFilter::find(const std::string& key, const int tid) {
+    table_pointer place_holder;
+    return find(key, place_holder, tid);
+}
 
 int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
                                const int tid) {
     if (verbose) {
-        std::cout << "tid " << tid << ": try to find key " << key << std::endl;
+        std::cout << "tid " << tid << ": try to find key " << key.substr(0, 16)
+                  << std::endl;
     }
     std::string fingerprint = md5_fingerprint(key);
     uint32_t hash1 = jenkins_hash(key) % table_size;
@@ -152,15 +153,17 @@ int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
                 if (get_marked(ptr1)) {         // help relocate this item
                     help_relocate(hash1, slot, false, tid);
                     continue;
-                } else if (fingerprint == *(std::string*)get_real_pointer(
-                                              ptr1)) {  // item found, return
-                    pointer = ptr1;
-                    if (verbose) {
-                        std::cout << "tid " << tid
-                                  << ": found key in bucket hash1, slot "
-                                  << slot << std::endl;
+                } else {
+                    HashEntry* real_ptr = (HashEntry*)get_real_pointer(ptr1);
+                    if (fingerprint == real_ptr->str) {  // item found
+                        pointer = ptr1;
+                        if (verbose) {
+                            std::cout << "tid " << tid
+                                      << ": found key in bucket hash1, slot "
+                                      << slot << std::endl;
+                        }
+                        return slot;
                     }
-                    return slot;
                 }
             }
 
@@ -171,15 +174,17 @@ int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
                 if (get_marked(ptr2)) {         // help relocate this item
                     help_relocate(hash2, slot, false, tid);
                     continue;
-                } else if (fingerprint ==
-                           *(std::string*)get_real_pointer(ptr2)) {
-                    pointer = ptr2;
-                    if (verbose) {
-                        std::cout << "tid " << tid
-                                  << ": found key in bucket hash2, slot "
-                                  << slot << std::endl;
+                } else {
+                    HashEntry* real_ptr = (HashEntry*)get_real_pointer(ptr2);
+                    if (fingerprint == real_ptr->str) {  // item found
+                        pointer = ptr2;
+                        if (verbose) {
+                            std::cout << "tid " << tid
+                                      << ": found key in bucket hash2, slot "
+                                      << slot << std::endl;
+                        }
+                        return slot + NUM_ITEMS_PER_ENTRY;
                     }
-                    return slot + NUM_ITEMS_PER_ENTRY;
                 }
             }
             // first round search end, second round search start
@@ -187,12 +192,20 @@ int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
             int ts2x = get_counter(hash_table[hash2][slot]);
             if (check_counter(ts1, ts2, ts1x, ts2x)) {
                 // possible false missing, try again
+                if (verbose) {
+                    std::cout << "tid " << tid
+                              << ": try find again after cheecking counter"
+                              << std::endl;
+                }
                 continue;
+            } else {
+                // key not found in current slot
+                break;
             }
             // second round search end
         }
     }
-    // key not found
+
     if (verbose) {
         std::cout << "tid " << tid << ": key not found" << std::endl;
     }
@@ -403,8 +416,8 @@ void LockFreeCuckooFilter::free_hazard_pointers(int tid) {
 
 bool LockFreeCuckooFilter::relocate(int table_idx, int slot_idx, int tid) {
     if (verbose) {
-        std::cout << "tid " << tid << ": relocate item in bucket << "
-                  << table_idx << ", slot " << slot_idx << std::endl;
+        std::cout << "tid " << tid << ": relocate item in bucket " << table_idx
+                  << ", slot " << slot_idx << std::endl;
     }
 
     bool found = false;

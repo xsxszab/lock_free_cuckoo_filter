@@ -75,14 +75,14 @@ class LockFreeCuckooFilter {
      */
     bool insert(const std::string& key, const int tid);
 
-    // /**
-    //  * @brief Find if a given key is present in the filter.
-    //  * @param[in]  key The key to search.
-    //  * @param[in] tid the caller's thread id
-    //  *
-    //  * @return (TODO: return slot index, need better explanation)
-    //  */
-    // int find(const std::string& key, const int tid);
+    /**
+     * @brief Find if a given key is present in the filter.
+     * @param[in]  key The key to search.
+     * @param[in] tid the caller's thread id
+     *
+     * @return (TODO: return slot index, need better explanation)
+     */
+    int find(const std::string& key, const int tid);
 
     /**
      * @brief Find if a given key is present in the filter. If it is present,
