@@ -402,17 +402,63 @@ void LockFreeCuckooFilter::free_hazard_pointers(int tid) {
 }
 
 bool LockFreeCuckooFilter::relocate(int table_idx, int slot_idx, int tid) {
+    if (verbose) {
+        std::cout << "tid " << tid << ": relocate item in bucket << "
+                  << table_idx << ", slot " << slot_idx << std::endl;
+    }
+
     bool found = false;
     int route[NUM_MAX_KICKS];
     int start_level = 0;
     int depth = start_level;
+
+path_discovery:
+
     do {
         table_pointer ptr1 = hash_table[table_idx][slot_idx];
+
+        // help relocate destionation slot until it is unmarked
         while (get_marked(ptr1)) {
             help_relocate(table_idx, slot_idx, false, tid);
-            // TODO
+            ptr1 = hash_table[table_idx][slot_idx];
         }
+
+        // destionation slot already occupied
+        if ((HashEntry*)get_real_pointer(ptr1) != nullptr) {
+            route[depth] = table_idx;
+            HashEntry* real_ptr1 = (HashEntry*)get_real_pointer(ptr1);
+            // calculate replacement location
+            table_idx = table_idx ^ (jenkins_hash(real_ptr1->str) % table_size);
+
+        } else {
+            found = true;
+        }
+        // loop until a valid replacement path is found or maximum depth reached
     } while (!found || ++depth < NUM_MAX_KICKS);
+
+    if (found) {
+        // traverse the path in reverse order
+        for (int i = depth - 1; i >= 0; i--) {
+            int source_idx = route[depth];
+            table_pointer ptr1 = hash_table[source_idx][slot_idx];
+            if (get_marked(ptr1)) {
+                help_relocate(source_idx, slot_idx, false, tid);
+                ptr1 = hash_table[source_idx][slot_idx];
+            }
+            if ((HashEntry*)get_real_pointer(ptr1) == nullptr) {
+                continue;
+            }
+            HashEntry* real_ptr1 = (HashEntry*)get_real_pointer(ptr1);
+            int dest_idx =
+                source_idx ^ (jenkins_hash(real_ptr1->str) % table_size);
+            table_pointer ptr2 = hash_table[dest_idx][slot_idx];
+            if ((HashEntry*)get_real_pointer(ptr2) == nullptr) {
+                start_level = i + 1;
+                goto path_discovery;
+            }
+            help_relocate(source_idx, slot_idx, false, tid);
+        }
+    }
 
     return found;
 }
