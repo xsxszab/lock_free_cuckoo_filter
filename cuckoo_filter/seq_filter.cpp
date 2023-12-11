@@ -31,7 +31,7 @@ bool SequentialFilter::insert(const std::string& key) {
     }
     std::string fingerprint = md5_fingerprint(key);
     uint32_t hash1 = jenkins_hash(key) % table_size;
-    uint32_t hash2 = hash1 ^ (jenkins_hash(fingerprint) % table_size);
+    uint32_t hash2 = get_next_hash_index(hash1, fingerprint);
 
     for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
         if (hash_table[hash1][i].empty()) {
@@ -68,11 +68,13 @@ bool SequentialFilter::insert(const std::string& key) {
         int bucket_idx = rand() % NUM_ITEMS_PER_ENTRY;
         // randomly pick a stored fingerprint to replace
         std::swap(fingerprint, hash_table[replace_hash][bucket_idx]);
-        replace_hash ^= jenkins_hash(fingerprint) % table_size;
+        replace_hash = get_next_hash_index(replace_hash, fingerprint);
         for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
             if (hash_table[replace_hash][i].empty()) {
                 hash_table[replace_hash][i] = fingerprint;
-                std::cout << "found replacement location" << std::endl;
+                if (verbose) {
+                    std::cout << "found replacement location" << std::endl;
+                }
                 mtx.unlock();
                 return true;
             }
@@ -85,6 +87,11 @@ bool SequentialFilter::insert(const std::string& key) {
     return false;
 }
 
+int SequentialFilter::get_next_hash_index(const int curr_idx,
+                                          const std::string fingerprint) {
+    return (curr_idx ^ (jenkins_hash(fingerprint) % table_size)) % table_size;
+}
+
 bool SequentialFilter::find(const std::string& key) {
     mtx.lock();
     if (verbose) {
@@ -92,7 +99,7 @@ bool SequentialFilter::find(const std::string& key) {
     }
     std::string fingerprint = md5_fingerprint(key);
     uint32_t hash1 = jenkins_hash(key) % table_size;
-    uint32_t hash2 = hash1 ^ (jenkins_hash(fingerprint) % table_size);
+    uint32_t hash2 = get_next_hash_index(hash1, fingerprint);
 
     for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
         if (hash_table[hash1][i] == fingerprint) {
@@ -129,7 +136,7 @@ bool SequentialFilter::remove(const std::string& key) {
     }
     std::string fingerprint = md5_fingerprint(key);
     uint32_t hash1 = jenkins_hash(key) % table_size;
-    uint32_t hash2 = hash1 ^ (jenkins_hash(fingerprint) % table_size);
+    uint32_t hash2 = get_next_hash_index(hash1, fingerprint);
 
     for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
         if (hash_table[hash1][i].length() != 0) {

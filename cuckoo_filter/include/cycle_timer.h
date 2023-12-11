@@ -4,7 +4,8 @@
 /**
  * @file cycle_timer.h
  * @brief this header file comes from 15418 course web page
- * (https://www.cs.cmu.edu/~418/code/rec03/mvmul/CycleTimer.h).
+ * (https://www.cs.cmu.edu/~418/code/rec03/mvmul/CycleTimer.h). In this project
+ * this header is used for precise time recording.
  */
 
 #if defined(__APPLE__)

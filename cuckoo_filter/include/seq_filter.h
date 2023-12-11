@@ -96,6 +96,14 @@ class SequentialFilter {
     std::vector<std::array<std::string, NUM_ITEMS_PER_ENTRY>> hash_table;
 
     /**
+     * @brief calculate a key's next hash table index based on the current index
+     * and its fingerprint.
+     * @param[in] curr_idx current index
+     * @param[in] fingerprint the key's MD5 fingerprint
+     */
+    int get_next_hash_index(const int curr_idx, const std::string fingerprint);
+
+    /**
      * @brief mutex for concurrent table access
      */
     std::mutex mtx;
