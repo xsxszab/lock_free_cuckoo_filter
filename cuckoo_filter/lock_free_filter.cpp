@@ -498,11 +498,9 @@ path_discovery:
     depth--;
 
     if (found) {
-        // std::cout << "depth: " << depth << std::endl;
         // traverse the path in reverse order
         for (int i = depth; i >= 0; i--) {
             int source_idx = route[depth];
-            // std::cout << source_idx << " " << table_size << std::endl;
             table_pointer source_ptr = hash_table[source_idx][slot_idx];
             if (get_marked(source_ptr)) {
                 help_relocate(source_idx, slot_idx, false, tid);

@@ -139,7 +139,8 @@ bool SequentialFilter::remove(const std::string& key) {
     uint32_t hash2 = get_next_hash_index(hash1, fingerprint);
 
     for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
-        if (hash_table[hash1][i].length() != 0) {
+        if (hash_table[hash1][i].length() != 0 &&
+            hash_table[hash1][i] == fingerprint) {
             hash_table[hash1][i].clear();
             if (verbose) {
                 std::cout << "removed key " << key << "at entry " << hash1
@@ -151,7 +152,8 @@ bool SequentialFilter::remove(const std::string& key) {
     }
 
     for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
-        if (hash_table[hash2][i].length() != 0) {
+        if (hash_table[hash2][i].length() != 0 &&
+            hash_table[hash2][i] == fingerprint) {
             hash_table[hash2][i].clear();
             if (verbose) {
                 std::cout << "removed key " << key << "at entry " << hash2
@@ -161,10 +163,14 @@ bool SequentialFilter::remove(const std::string& key) {
             return true;
         }
     }
-    // yes, no verbose condition here
+    // if (verbose) {
+
+    // yes, not verbose condition here
     std::cout << "warning, trying to delete non-exsitent key, the filter's "
                  "behavior is undefined"
               << std::endl;
+
+    // }
     mtx.unlock();
     return false;
 }
