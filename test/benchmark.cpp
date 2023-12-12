@@ -7,21 +7,33 @@
 #include <iostream>
 #include <thread>
 
+// self-explanatory
 #define HASH_TABLE_SIZE 256000
+// length of the string inserted into the filter
 #define STRING_LENGTH 256
 
+// how many strings will be inserted per thread
 #define NUM_STRINGS_PER_THREAD 4000
+// self-explanatory
 #define NUM_THREADS 32
+// total number of strings inserted
 #define NUM_STRINGS (NUM_THREADS * NUM_STRINGS_PER_THREAD)
 
+// repeat benchmark for NUM_REPEAT times
 #define NUM_REPEAT 3
+
+// for colored test output
+const char* GREEN = "\033[0;32m";
+const char* NC = "\033[0m";
 
 int main() {
     std::vector<std::string> strings;
 
-    std::cout << "Start benchmark" << std::endl;
-    std::cout << "Number of threads: " << NUM_THREADS << std::endl;
-    std::cout << "Test Scenario: 90\% Find, 5\% Insert, 5\% Remove, "
+    std::cout << GREEN << "Start benchmark" << NC << std::endl;
+    std::cout << GREEN << "Number of threads: " << NC << NUM_THREADS
+              << std::endl;
+    std::cout << GREEN << "Test Scenario: " << NC
+              << "90\% Find, 5\% Insert, 5\% Remove, "
               << NUM_STRINGS_PER_THREAD * 20 << " operations in total"
               << std::endl;
 
@@ -30,10 +42,8 @@ int main() {
         strings.push_back(gen_random_string(STRING_LENGTH));
     }
 
-    // benchmark coarse-grained locked cuckoo filter
-
+    // Coarse-grained locked test start
     double seq_total_time = 0.0;
-
     for (int i = 0; i < NUM_REPEAT; i++) {
         SequentialFilter seq_filter(HASH_TABLE_SIZE, false);
 
@@ -83,7 +93,6 @@ int main() {
 
     // Fine-grained locked test end, Lock-free test start
     double lock_free_total_time = 0.0;
-
     for (int i = 0; i < NUM_REPEAT; i++) {
         LockFreeCuckooFilter lock_free_filter(HASH_TABLE_SIZE, NUM_THREADS,
                                               false);
@@ -120,5 +129,6 @@ int main() {
     std::cout << "Lock free cuckoo filter execution time: "
               << lock_free_total_time / NUM_REPEAT << "s" << std::endl;
 
+    // lock free test end
     return 0;
 }
