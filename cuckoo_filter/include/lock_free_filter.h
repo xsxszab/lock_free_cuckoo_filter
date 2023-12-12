@@ -108,19 +108,21 @@ class LockFreeCuckooFilter {
     bool remove(const std::string& key, const int tid);
 
     /**
-     * @brief get the hash table's size.
+     * @brief Get the hash table's size.
      * @return return the hash table's size.
      */
     int size() const;
 
     /**
-     * @brief change the filter's verbose mode
+     * @brief Change the filter's verbose mode.
      * @param[in] _verbose new verbose mode
      */
     void change_verbose(const bool _verbose);
 
     /**
-     * @brief Reset the filter with new capacity and thread count.
+     * @brief Reset the filter with new capacity and thread count. Warning: this
+     * method can only be called when no thread will access this filter anymore,
+     * otherwise the filter's behavior is undefined.
      * @param[in] capacity hash table size
      * @param[in] _thread_count number of threads that will access this filter
      * concurrently
@@ -151,14 +153,14 @@ class LockFreeCuckooFilter {
     bool verbose;
 
     /**
-     * @brief a per-thread record of hazard pointers.
+     * @brief A per-thread record of hazard pointers.
      */
     std::vector<std::array<HashEntry*, MAX_HAZARD_POINTER_COUNT>> hazard_ptrs;
 
     // std::vector<AlignedInt> hazard_ptr_count;
 
     /**
-     * @brief a per-thread record of retired pointers, denoting pointers that
+     * @brief A per-thread record of retired pointers, denoting pointers that
      * are no longer used by the current thread but may be accessed by other
      * threads.
      */
@@ -176,7 +178,7 @@ class LockFreeCuckooFilter {
                        const int ts2x);
 
     /**
-     * @brief calculate a key's next hash table index based on the current index
+     * @brief Calculate a key's next hash table index based on the current index
      * and its fingerprint.
      * @param[in] curr_idx current index
      * @param[in] fingerprint the key's MD5 fingerprint

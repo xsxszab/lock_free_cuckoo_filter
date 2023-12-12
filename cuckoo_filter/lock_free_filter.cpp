@@ -7,6 +7,10 @@
 
 LockFreeCuckooFilter::LockFreeCuckooFilter(int capacity, int _thread_count) {
     table_size = capacity;
+    if (table_size <= 0) {
+        std::cout << "error: invalid capacity" << std::endl;
+        abort();
+    }
     hash_table.resize(table_size);
     verbose = false;
 
@@ -20,6 +24,10 @@ LockFreeCuckooFilter::LockFreeCuckooFilter(int capacity, int _thread_count) {
 LockFreeCuckooFilter::LockFreeCuckooFilter(int capacity, int _thread_count,
                                            bool _verbose) {
     table_size = capacity;
+    if (table_size <= 0) {
+        std::cout << "error: invalid capacity" << std::endl;
+        abort();
+    }
     hash_table.resize(table_size);
     verbose = _verbose;
 
@@ -49,6 +57,7 @@ LockFreeCuckooFilter::~LockFreeCuckooFilter() {
 }
 
 bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
+    clear_hazard(tid);
     if (verbose) {
         std::cout << "tid " << tid << ": try to insert key "
                   << key.substr(0, 16) << std::endl;
@@ -147,6 +156,7 @@ int LockFreeCuckooFilter::find(const std::string& key, const int tid) {
 
 int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
                                const int tid) {
+    clear_hazard(tid);
     if (verbose) {
         std::cout << "tid " << tid << ": try to find key " << key.substr(0, 16)
                   << std::endl;
@@ -226,6 +236,7 @@ int LockFreeCuckooFilter::find(const std::string& key, table_pointer& pointer,
 }
 
 bool LockFreeCuckooFilter::remove(const std::string& key, const int tid) {
+    clear_hazard(tid);
     std::string fingerprint = md5_fingerprint(key);
     uint32_t hash1 = jenkins_hash(key) % table_size;
     uint32_t hash2 = get_next_hash_index(hash1, fingerprint);
@@ -345,6 +356,7 @@ void LockFreeCuckooFilter::retire_key(table_pointer pointer, const int tid) {
 
 void LockFreeCuckooFilter::help_relocate(int table_idx, int slot_idx,
                                          bool initiator, int tid) {
+    clear_hazard(tid);
     if (verbose) {
         std::cout << "tid " << tid << ": help relocate item in bucket "
                   << table_idx << ", slot " << slot_idx << std::endl;

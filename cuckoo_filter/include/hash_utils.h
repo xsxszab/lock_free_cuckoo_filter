@@ -27,7 +27,8 @@ std::string md5_fingerprint(const std::string& key);
 // function in a hash table, the hash table index should be 'hash % table_size'
 
 /**
- * @brief jenkins hash function
+ * @brief jenkins hash function. modified based on code from
+ * https://en.wikipedia.org/wiki/Jenkins_hash_function .
  * @param[in] key the input key
  * @return the hash value
  */
