@@ -1,6 +1,9 @@
 #include <lock_free_filter.h>
 
+#include <algorithm>
+#include <chrono>
 #include <iostream>
+#include <random>
 
 LockFreeCuckooFilter::LockFreeCuckooFilter(int capacity, int _thread_count) {
     table_size = capacity;
@@ -60,10 +63,12 @@ bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
     while (true) {
         // iterate through all NUM_ITEMS_PER_ENTRY * 2 slots, try to find an
         // empty one
+        bool found_empty = false;
         for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
             ptr1 = hash_table[hash1][i];
             // found an empty slot
             if (get_real_pointer(ptr1) == 0) {
+                found_empty = true;
                 if (__sync_bool_compare_and_swap(
                         &hash_table[hash1][i], ptr1,
                         create_pointer(get_counter(ptr1), (uint64_t)new_entry,
@@ -80,6 +85,7 @@ bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
             ptr1 = hash_table[hash2][i];
             // found an empty slot
             if (get_real_pointer(ptr1) == 0) {
+                found_empty = true;
                 if (__sync_bool_compare_and_swap(
                         &hash_table[hash2][i], ptr1,
                         create_pointer(get_counter(ptr1), (uint64_t)new_entry,
@@ -94,27 +100,33 @@ bool LockFreeCuckooFilter::insert(const std::string& key, const int tid) {
             }
         }
 
-        // cannot find empty slot, randomly kick out one item
-        int kick_slot = rand() % NUM_ITEMS_PER_ENTRY;
-        if (relocate(hash1, kick_slot, tid)) {
-            // kicked out an item, try inseration again
-            ptr1 = hash_table[hash1][kick_slot];
-            if (get_real_pointer(ptr1) == 0) {
-                if (__sync_bool_compare_and_swap(
-                        &hash_table[hash1][kick_slot], ptr1,
-                        create_pointer(get_counter(ptr1), (uint64_t)new_entry,
-                                       false))) {
-                    if (verbose) {
-                        std::cout << "tid " << tid
-                                  << ": inserted key in bucket " << hash1
-                                  << ", slot " << kick_slot << std::endl;
-                    }
-                    return true;
-                }
-            }
+        if (found_empty) {
             continue;
-        } else {
-            // table full, inseration failed
+        }
+
+        // cannot find empty slot, try to kick out one item
+        unsigned seed =
+            std::chrono::system_clock::now().time_since_epoch().count();
+
+        std::array<int, NUM_ITEMS_PER_ENTRY> try_kick_order;
+        for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
+            try_kick_order[i] = i;
+        }
+
+        std::shuffle(try_kick_order.begin(), try_kick_order.end(),
+                     std::default_random_engine(seed));
+
+        bool relocate_success = false;
+
+        for (int i = 0; i < NUM_ITEMS_PER_ENTRY; i++) {
+            int kick_slot = try_kick_order[i];
+            if (relocate(hash1, kick_slot, tid)) {
+                relocate_success = true;
+                break;
+            }
+        }
+
+        if (!relocate_success) {
             if (verbose) {
                 std::cout << "tid " << tid
                           << ": warning: table full, inseration failed"
@@ -507,7 +519,7 @@ path_discovery:
                 start_level = i + 1;
                 goto path_discovery;
             }
-            help_relocate(source_idx, slot_idx, false, tid);
+            help_relocate(source_idx, slot_idx, true, tid);
         }
     }
 
