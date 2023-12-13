@@ -13,14 +13,19 @@
 #define STRING_LENGTH 256
 
 // how many strings will be inserted per thread
-#define NUM_STRINGS_PER_THREAD 4000
+#define NUM_STRINGS_PER_THREAD 12800
 // self-explanatory
 #define NUM_THREADS 32
-// total number of strings inserted
+// total number of strings inserted, the marco setting shown here results in
+// locad factor 0.4 (HASH_TABLE_SIZE * NUM_ITEMS_PER_ENTRY / NUM_STRINGS)
 #define NUM_STRINGS (NUM_THREADS * NUM_STRINGS_PER_THREAD)
 
 // repeat benchmark for NUM_REPEAT times
 #define NUM_REPEAT 3
+
+#define TEST_COARSE_GRAINED
+#define TEST_FINE_GRAINED
+#define TEST_LOCK_FREE
 
 // for colored test output
 const char* GREEN = "\033[0;32m";
@@ -42,6 +47,7 @@ int main() {
         strings.push_back(gen_random_string(STRING_LENGTH));
     }
 
+#ifdef TEST_COARSE_GRAINED
     // Coarse-grained locked test start
     double seq_total_time = 0.0;
     for (int i = 0; i < NUM_REPEAT; i++) {
@@ -78,9 +84,10 @@ int main() {
 
     std::cout << "Coarse-grained locked cuckoo filter execution time: "
               << seq_total_time / NUM_REPEAT << "s" << std::endl;
+#endif
 
+#ifdef TEST_FINE_GRAINED
     // Coarse-grained locked test end, Fine-grained locked test start
-
     double fine_grained_total_time = 0.0;
     for (int i = 0; i < NUM_REPEAT; i++) {
         double start_time = CycleTimer::currentSeconds();
@@ -90,7 +97,9 @@ int main() {
 
     std::cout << "Fine-grained locked cuckoo filter execution time: "
               << fine_grained_total_time / NUM_REPEAT << "s" << std::endl;
+#endif
 
+#ifdef TEST_LOCK_FREE
     // Fine-grained locked test end, Lock-free test start
     double lock_free_total_time = 0.0;
     for (int i = 0; i < NUM_REPEAT; i++) {
@@ -130,5 +139,8 @@ int main() {
               << lock_free_total_time / NUM_REPEAT << "s" << std::endl;
 
     // lock free test end
+#endif
+
+    std::cout << GREEN << "benchmark finished" << NC << std::endl;
     return 0;
 }

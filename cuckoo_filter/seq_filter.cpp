@@ -163,14 +163,11 @@ bool SequentialFilter::remove(const std::string& key) {
             return true;
         }
     }
-    // if (verbose) {
-
-    // yes, not verbose condition here
-    std::cout << "warning, trying to delete non-exsitent key, the filter's "
-                 "behavior is undefined"
-              << std::endl;
-
-    // }
+    if (verbose) {
+        std::cout << "warning, trying to delete non-exsitent key, the filter's "
+                     "behavior is undefined"
+                  << std::endl;
+    }
     mtx.unlock();
     return false;
 }
