@@ -3,7 +3,7 @@
 A lock-free cuckoo filter implementation.
 
 ### Requirements
-* C++ 14
+* C++ 17
 * CMake >= 3.4.1
 * GCC 4.1 or newer (for `__sync_bool_compare_and_swap`) and x86_64 platform
 * libssl-dev (for generating MD5 fingerprint)
