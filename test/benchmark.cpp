@@ -88,15 +88,43 @@ int main() {
 
 #ifdef TEST_FINE_GRAINED
     // Coarse-grained locked test end, Fine-grained locked test start
+
     double fine_grained_total_time = 0.0;
     for (int i = 0; i < NUM_REPEAT; i++) {
+        FineGrainedFilter fg_filter(HASH_TABLE_SIZE, false);
+
+        auto seq_func = [&](int tid) {
+            int str_start_idx = tid * NUM_STRINGS_PER_THREAD;
+            int str_end_idx = (tid + 1) * (NUM_STRINGS_PER_THREAD);
+            for (int i = str_start_idx; i < str_end_idx; i++) {
+                fg_filter.insert(strings[i]);
+            }
+            for (int i = 0; i < NUM_STRINGS_PER_THREAD * 18; i++) {
+                int query_idx = rand() % strings.size();
+                fg_filter.find(strings[query_idx]);
+            }
+            for (int i = str_start_idx; i < str_end_idx; i++) {
+                fg_filter.remove(strings[i]);
+            }
+        };
+        std::thread threads[NUM_THREADS];
+
         double start_time = CycleTimer::currentSeconds();
+
+        for (int i = 0; i < NUM_THREADS; i++) {
+            threads[i] = std::thread(seq_func, i);
+        }
+        for (int i = 0; i < NUM_THREADS; i++) {
+            threads[i].join();
+        }
+
         double end_time = CycleTimer::currentSeconds();
         fine_grained_total_time += end_time - start_time;
     }
 
     std::cout << "Fine-grained locked cuckoo filter execution time: "
               << fine_grained_total_time / NUM_REPEAT << "s" << std::endl;
+
 #endif
 
 #ifdef TEST_LOCK_FREE
