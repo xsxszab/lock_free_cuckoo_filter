@@ -39,8 +39,8 @@ int main() {
               << std::endl;
     std::cout << GREEN << "Test Scenario: " << NC
               << "90\% Find, 5\% Insert, 5\% Remove, "
-              << NUM_STRINGS_PER_THREAD * 20 << " operations in total"
-              << std::endl;
+              << NUM_THREADS * NUM_STRINGS_PER_THREAD * 20
+              << " operations in total" << std::endl;
 
     // generate a list of random strings
     for (int i = 0; i < NUM_STRINGS; i++) {
