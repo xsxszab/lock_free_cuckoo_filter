@@ -1,0 +1,13 @@
+Type,Load Factor,Throughput (ops/sec)
+Coarse-grained Lock,0.1,392106
+Fine-grained Lock,0.1,2429053
+Lock-free,0.1,2324808
+Coarse-grained Lock,0.2,388755
+Fine-grained Lock,0.2,2397874
+Lock-free,0.2,2292982
+Coarse-grained Lock,0.3,380443
+Fine-grained Lock,0.3,2379247
+Lock-free,0.3,2290313
+Coarse-grained Lock,0.4,381947
+Fine-grained Lock,0.4,2363347
+Lock-free,0.4,2220716

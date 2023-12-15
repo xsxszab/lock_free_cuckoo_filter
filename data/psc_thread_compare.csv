@@ -1,0 +1,16 @@
+Type,Thread Count,Throughput (ops/sec)
+Coarse-grained Lock,4,210001
+Fine-grained Lock,4,863016
+Lock-free,4,934220
+Coarse-grained Lock,8,203594
+Fine-grained Lock,8,1322145
+Lock-free,8,1231192
+Coarse-grained Lock,16,209600
+Fine-grained Lock,16,1254777
+Lock-free,16,1245617
+Coarse-grained Lock,32,218878
+Fine-grained Lock,32,1225576
+Lock-free,32,1242130
+Coarse-grained Lock,64,219668
+Fine-grained Lock,64,1123600
+Lock-free,64,1211846
