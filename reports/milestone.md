@@ -14,7 +14,7 @@ This project is more challenging than we expected, but the progress is going wel
 
 The most challenging part of our project is the implementation of the lock-free cuckoo filter, which is essentially harder to design than 1-array or 2-array cuckoo hash tables. Specifically, cuckoo filter uses 4-way associative bucketized cuckoo hash table, as illustrated in the below figure (this figure comes from paper [Cuckoo Filter: Practically Better Than Bloom](https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf)).
 
-<img src="/Users/xsxsz/Desktop/15618/project/pic.png" style="zoom:70%" />
+<img src="./pic/pic.png" style="zoom:70%" />
 
 This structure complicates the replacement operation, because now  an item will have four possible new locations during replacement, instread of only one in 1-array or 2-array versions. Accordingly, the search path needed for finding a valid replacement location becomes a quad-tree rather than a line, making ensuring correctness significantly harder.
 

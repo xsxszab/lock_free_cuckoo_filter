@@ -16,7 +16,7 @@ Cuckoo hashing is a type of open-addressing hash algorithm with $\mathcal{O}(1)$
 
 The figure below illustrates the basic cuckoo hash table, denoted as 1-array Cuckoo Hash Table. In addition to this version, two widely used variants exist: the 2-array Cuckoo Hash Table and the n-way associative cuckoo hash table. The former extends the hash table with an additional array, and table entries will be moved between these two arrays during replacement. The latter, often with $n$ set to 4, associates $n$ arrays together. This design allows multiple keys to be associated with the same hash location, effectively reducing the frequency of replacement operations.
 
-<img src="/Users/xsxsz/Desktop/15618/project/pic/hash.png" style="zoom:25%" />
+<img src="./pic/hash.png" style="zoom:25%" />
 
 **Cuckoo Filter**
 
@@ -54,14 +54,14 @@ This subsection describes data structures used in our lock-free cuckoo filter im
 **4-way Associative Cuckoo Hash Table**
 Basically, our cuckoo hash table structure is fairly similar to the one used in cuckoo filter's original paper [1] with several modifications, as shown below.
 
-<img src="/Users/xsxsz/Desktop/15618/project/pic/table.png" style="zoom:30%" />
+<img src="./pic/table.png" style="zoom:30%" />
 
 For each item to be inserted into the hash table, two hash functions will be used to map it to two distinct buckets, namely the primary and the alternative bucket. Instead of directly storing fingerprints inside the hash table, each fingerprint is put in a piece of dynamically allocated memory. Subsequently, we store an augmented 64-bit pointer (elaborated in the subsequent subsection) in the corresponding table entry, pointing to the allocated memory. The primary rationale behind this adjustment is that atomic compare-and-swap operation cannot be performed on a C++ string instance, while GCC provides `__sync_bool_compare_and_swap` intrinsic to update a 64-bit variable, by which we could modifiy table entries in a lock-free manner.
 
 **Table Pointer**
 The construction of the table pointer, essentially a conventional x86_64 pointer augmented with additional information, closely follows the approach outlined in paper [2]. Its structural details are illustrated in the figure below.
 
-<img src="/Users/xsxsz/Desktop/15618/project/pic/pointer.png" style="zoom:20%" />
+<img src="./pic/pointer.png" style="zoom:20%" />
 
 The fundamental concept underlying this data structure involves leveraging unused fields within a 64-bit pointer to incorporate additional information. Specifically, the 48-bit real pointer field encompasses the lower 48 bits of a real x86_64 pointer. On the x86_64 platform, only the lower 48 bits of a 64-bit pointer are used to represent valid pointers, with the remaining bits set to zero. Consequently, we can utilize these lower 48 bits to store a pointer indicating the fingerprint, while the higher 16 bits serve to track the number of times this entry has been relocated. This relocation counter is crucial for preventing false misses in *find* operations. Moreover, due to memory address alignment, the least significant bit of an x86_64 pointer will always be zero. We leverage this bit to store a flag, which indicates whether the pointer is currently being relocated.
 
@@ -73,7 +73,7 @@ Locating a matching fingerprint in the hash table involves a sequence of queries
 
 However, this approach may overlook existing fingerprints if they are replaced during the search, leading to false misses. For instance, a matching fingerprint might be stored in its alternative bucket while the *find* operation is querying the primary bucket. By the time the find operation proceeds to search the alternative bucket, the fingerprint may have been relocated to its primary bucket. In such cases, the find operation fails to locate the fingerprint, even if it exists in the hash table, as illustrated in the figure below.
 
-<img src="/Users/xsxsz/Desktop/15618/project/pic/move.png" style="zoom:25%" />
+<img src="./pic/move.png" style="zoom:25%" />
 
 To tackle this issue, we introduce a replacement rule: each fingerprint can only be replaced to the same entry in other buckets. For example, in the above figure, the fingerprint (more precisly, a table pointer pointing to it) stored in the 3rd entry of the alternative bucket can only be relocated to the 3rd entry in its primary bucket. Consequently, each entry now has only two possible locations, regardless of the number of replacements happened. We employ a two-round query approach to find fingerprints while mitigating false misses. This process utilizes each entry's counter value, which records how many times the current entry has been relocated. It is important to note that for simplicity, we omit discussions on hazard pointer-related functionalities, which will be elaborated in detail in section 2.4.
 
@@ -99,7 +99,7 @@ The *relocate* operation is invoked when the *insert* operation is unable to fin
 
 In line with the replacement rule proposed in the *insert* operation, each entry has only one possible replacement location during relocation. Consequently, a single replacement path involves entries located at the same position in each bucket. For instance, to relocate the $i_{th}$ entry of a bucket, all entries in the replacement path will be the $i_{th}$ entry in a certain bucket. This process is illustrated in the figure below."
 
-<img src="/Users/xsxsz/Desktop/15618/project/pic/relocate.png" style="zoom:25%" />
+<img src="./pic/relocate.png" style="zoom:25%" />
 
 The relocate operation generally comprises two phases: path discovery and entry replacement. In the path discovery phase, the algorithm tries to find the previously mentioned replacement path. Should it encounter an entry marked for relocation (indicated by its relocation mark set to true), signifying that it is presently in the process of being relocated, the relocate operation invokes a helper function, `help_relocate`, to move the entry to its destination. Subsequently, the path search process resumes. If the search process exceeds the predefined length threshold without locating an empty entry, the *relocate* operation returns `false`. Otherwise, it signifies the discovery of a valid replacement path.
 
@@ -125,14 +125,14 @@ This section outlines the experiments conducted to assess the performance of the
 #### 3.1 Performance Comparsion between Three Cuckoo Filters on GHC Machines
 In this experiment, we systematically compared the performance of three variants of cuckoo filters: coarse-grained lock, fine-grained lock, and lock-free implementations. The evaluation was conducted under a semi-realistic scenario, simulating a workload comprising 90% find operations, 5% insert operations, and 5% remove operations, with a load factor of 0.4. The results are presented in the figure below.
 
-<img src="/Users/xsxsz/Desktop/15618/project/pic/ghc_compare.png" style="zoom:30%" />
+<img src="./pic/ghc_compare.png" style="zoom:30%" />
 
 As evident from the figure above, our lock-free cuckoo consistently outperforms the coarse-grained lock version, while demonstrating comparable performance with the fine-grained lock version. Notably, when the number of threads is equal to or less than the number of physical cores (in this case, 8), the lock-free filter exhibits near-linear scalability with the thread count. When the thread counter is larger than 8, the context switch between threads may incur significant runtime overhead, thus preventing the filter's performance from increasing. It's worth noting that the lower throughput of the lock-free filter compared to the fine-grained lock version may be implementation-specific (we haven't thoroughly profiled it yet). In our fine-grained implementation, fingerprints reside within the hash table, whereas in the lock-free version, fingerprints are stored in dynamically allocated memory. Consequently, the overhead of allocating and deallocating memory for fingerprints may incur significant runtime overhead in our lock-free version.
 
 #### 3.2 Performance Comparsion between Three Cuckoo Filters on PSC Machines
 To further test our implementation's scalability on multi-core platforms, we measured our filters' performance on the PSC machine using the same experimental setting, the results are shown below.
 
-<img src="/Users/xsxsz/Desktop/15618/project/pic/psc_compare.png" style="zoom:30%" />
+<img src="./pic/psc_compare.png" style="zoom:30%" />
 
 As can be observed from the figure, the lock-free cuckoo filter and the fine-grained lock version have similar performance on the PSC machine, and both of their performance slightly drop as the thread count exceeds 32. For the fine-grained lock version, this is because the granularity of locks used is too coarse to support high councurrency in high thread count environments. In the context of the lock-free version, an explanation is that with a high number of threads, the contention between threads makes compare-and-swap operations fail frequently. Consequently, table operations need to be restarted for more times on average, diminishing the overall efficiency of the filter.
 
@@ -156,7 +156,7 @@ It can be observed that the filter's throughput gradually drops as the degree of
 
 We further investigate the impact of load factor on three cuckoo filters, as depicted below. This experiment is conducted under the same settings as the aforementioned ones, with a thread count of 8.
 
-<img src="/Users/xsxsz/Desktop/15618/project/pic/ghc_load_factor.png" style="zoom:30%" />
+<img src="./pic/ghc_load_factor.png" style="zoom:30%" />
 
 As can be seen from the above figure, as the load factor increases, the cuckoo filters' performance drops slightly. This is because as the load factor increases, the *insert* operation need to search more entries for an empty one, and the expensive *relocation* operation will also be called more frequently, resulting in lower throughput. Note that when the load factor is larger than or equal to 0.5, cuckoo filter's performance will drop significantly. Since this is an inherent feature of cuckoo filter rather than our lock-free implementation, we did not address this issue in our project.
 
