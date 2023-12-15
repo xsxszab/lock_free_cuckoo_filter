@@ -17,6 +17,11 @@ A lock-free cuckoo filter implementation.
 * executable test can be found in `./build/bin/`.
 * (optional) install `doxygen, graphviz` and run `doxygen` in project root directory to generate documents.
 
+### Reports
+* [Project Proposal](https://github.com/xsxszab/lock_free_cuckoo_filter/blob/master/reports/proposal.md)
+* [Milestone Report](https://github.com/xsxszab/lock_free_cuckoo_filter/blob/master/reports/milestone.md)
+* [Final Report](https://github.com/xsxszab/lock_free_cuckoo_filter/blob/master/reports/final_report.md)
+
 
 ### References
 [1] [Cuckoo Filter: Practically Better Than Bloom](https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf)
