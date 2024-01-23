@@ -22,6 +22,10 @@ A lock-free cuckoo filter implementation.
 * [Milestone Report](https://github.com/xsxszab/lock_free_cuckoo_filter/blob/master/reports/milestone.md)
 * [Final Report](https://github.com/xsxszab/lock_free_cuckoo_filter/blob/master/reports/final_report.md)
 
+### Future optimizations
+- [] place all fingerprints in one bucket in one continuous piece of memory
+- [] BFS-based replacement algorithm
+
 ### References
 [1] [Cuckoo Filter: Practically Better Than Bloom](https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf)
 
@@ -30,3 +34,4 @@ A lock-free cuckoo filter implementation.
 [3] [MemC3: Compact and Concurrent MemCache with Dumber Caching and Smarter Hashing](https://www.usenix.org/system/files/conference/nsdi13/nsdi13-final197.pdf)
 
 [4] [Hazard pointers: safe memory reclamation for lock-free objects](https://ieeexplore.ieee.org/document/1291819)
+
