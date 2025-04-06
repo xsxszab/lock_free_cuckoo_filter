@@ -22,9 +22,9 @@ A lock-free cuckoo filter implementation.
 * [Milestone Report](https://github.com/xsxszab/lock_free_cuckoo_filter/blob/master/reports/milestone.md)
 * [Final Report](https://github.com/xsxszab/lock_free_cuckoo_filter/blob/master/reports/final_report.md)
 
-### Future optimizations
-- [ ] place all fingerprints in one bucket in one continuous piece of memory
-- [ ] BFS-based replacement algorithm
+### Future Optimizations
+- [ ] Store all fingerprints in a single, contiguous memory block to improve cache locality and reduce allocation overhead.
+- [ ] Implement a breadth-first search (BFS)-based replacement algorithm for more efficient eviction decisions.
 
 ### References
 [1] [Cuckoo Filter: Practically Better Than Bloom](https://www.cs.cmu.edu/~dga/papers/cuckoo-conext2014.pdf)
